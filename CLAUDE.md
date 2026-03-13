@@ -73,8 +73,8 @@ Refer to `InvestQuest_PRD_TierA.docx` for the full product specification includi
         "After 3 failures on a stage, a hint nudges toward the principle; after 5, a clearer explanation is provided"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "2026-03-14: Implemented StageViewModel state machine (briefing→decision→simulation→result→insight), DecisionType/PlayerDecision enums, all 5 view files, replayStage() for failure loops. 55/55 tests pass."
     },
     {
       "id": "US-CORE-004",

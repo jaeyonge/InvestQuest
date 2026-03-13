@@ -1,3 +1,9 @@
+## US-CORE-003 — Stage Gameplay Loop (2026-03-14)
+
+- StageFlowState enum cannot conform to Equatable when it carries StageOutcome (which is a struct with Double fields — Equatable is fine, but the original error was about associated value type conformance). Fix: remove Equatable from the enum.
+- Failure-loop tests must call replayStage() between iterations; advanceFromBriefing() is a guard-gated no-op unless state is exactly .briefing.
+- xcodebuild test running in background (via run_in_background) may emit background task ID; use TaskOutput tool with block:true to wait for results.
+
 ## US-CORE-002 — Game Progression System (2026-03-14)
 
 - xcodegen must be re-run after adding new source files to subdirectories; xcodebuild will not pick them up automatically.

@@ -7,6 +7,6 @@ struct InvestQuestApp: App {
         WindowGroup {
             ContentView()
         }
-        .modelContainer(for: [GameProgress.self, DecisionRecord.self])
+        .modelContainer(for: [GameProgress.self, DecisionRecord.self, PhaseCompletionRecord.self])
     }
 }
