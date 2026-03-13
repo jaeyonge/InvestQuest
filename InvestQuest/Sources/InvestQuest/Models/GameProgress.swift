@@ -8,15 +8,18 @@ final class GameProgress {
     var currentStage: Int
     var completedPhases: [Int]
     var lastPlayedDate: Date
+    var hasSeenIntro: Bool
 
     init(currentPhase: Int = 1,
          currentStage: Int = 1,
          completedPhases: [Int] = [],
-         lastPlayedDate: Date = .now) {
+         lastPlayedDate: Date = .now,
+         hasSeenIntro: Bool = false) {
         self.currentPhase = currentPhase
         self.currentStage = currentStage
         self.completedPhases = completedPhases
         self.lastPlayedDate = lastPlayedDate
+        self.hasSeenIntro = hasSeenIntro
     }
 }
 

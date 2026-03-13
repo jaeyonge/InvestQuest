@@ -1,3 +1,9 @@
+## US-CORE-004 — Phase Completion Flow (2026-03-14)
+
+- PhaseCompletionRecord must be added to modelContainer(for:) in InvestQuestApp.swift alongside other SwiftData models; forgetting this causes container creation to fail.
+- Color(hex:) extension needed for colorblind-safe badge colors defined as hex strings.
+- PhaseCompletionViewModel uses fatalError for invalid phaseId; tests must only use valid phase IDs (1-7).
+
 ## US-CORE-003 — Stage Gameplay Loop (2026-03-14)
 
 - StageFlowState enum cannot conform to Equatable when it carries StageOutcome (which is a struct with Double fields — Equatable is fine, but the original error was about associated value type conformance). Fix: remove Equatable from the enum.
