@@ -56,8 +56,8 @@ Refer to `InvestQuest_PRD_TierA.docx` for the full product specification includi
         "Returning user after long absence sees a recap of last completed phase concept and suggestion to replay last stage"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "2026-03-14: Implemented GameProgressService with isPhaseUnlocked/isStageUnlocked/completeStage/recordDecision, PhaseConfig (7 phases), PhaseMapView with accessibility labels. 33/33 tests pass."
     },
     {
       "id": "US-CORE-003",

@@ -1,3 +1,11 @@
+## US-CORE-002 — Game Progression System (2026-03-14)
+
+- xcodegen must be re-run after adding new source files to subdirectories; xcodebuild will not pick them up automatically.
+- All xcodebuild commands must be run from the InvestQuest/ subdirectory (where the .xcodeproj lives), not the repo root.
+- SwiftData in-memory ModelContainer for tests: use ModelConfiguration(isStoredInMemoryOnly: true) and ModelContainer(for: ..., configurations: config).
+- @MainActor annotation required on classes that use @Published and are accessed from SwiftData/SwiftUI context.
+- GameProgressService uses stageResults array (in-memory) for stage unlock queries; this is intentional — stage results are not persisted as a separate model.
+
 ## US-CORE-001 — Market Simulation Engine (2026-03-14)
 
 - iPhone 15 simulator does not exist in Xcode 26.3. Available simulators: iPhone 17 Pro, iPhone 17 Pro Max, iPhone Air, iPhone 17, iPhone 16e. Used iPhone 16e as substitute throughout.
