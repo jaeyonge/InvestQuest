@@ -40,8 +40,8 @@ Refer to `InvestQuest_PRD_TierA.docx` for the full product specification includi
         "Engine exposes a clean protocol/interface consumed by all phase ViewModels"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "2026-03-14: Implemented MarketSimulationEngine (xorshift64 PRNG, Box-Muller normal, log-normal price model). MarketSimulationEngineProtocol exposes simulate(config:) and simulateBatch(config:count:). 14/14 tests pass. iPhone 15 simulator unavailable on Xcode 26.3 — used iPhone 16e."
     },
     {
       "id": "US-CORE-002",

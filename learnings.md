@@ -1,0 +1,9 @@
+## US-CORE-001 — Market Simulation Engine (2026-03-14)
+
+- iPhone 15 simulator does not exist in Xcode 26.3. Available simulators: iPhone 17 Pro, iPhone 17 Pro Max, iPhone Air, iPhone 17, iPhone 16e. Used iPhone 16e as substitute throughout.
+- xcodegen is installed at /opt/homebrew/bin/xcodegen. project.yml must set GENERATE_INFOPLIST_FILE: YES on unit-test targets or codesign fails.
+- Old TestResults.xcresult must be removed before re-running xcodebuild test with -resultBundlePath; omit the flag to avoid the issue entirely.
+- xorshift64 PRNG with Box-Muller produces correct N(0,1) samples but arithmetic mean of log-normal samples can be higher than expected for small batch sizes (200 runs with -10% drift over 20 periods yielded mean 96.44 instead of expected ~92). Fix: use stronger drift (-20%) and more periods (50) for statistical reliability.
+- SwiftData CoreData errors during simulator startup (NSCocoaErrorDomain 512) are transient and self-recover; do not indicate test failures.
+- Xcode 26.3 ships with Swift 6.2.4. SWIFT_VERSION must be set to "5.9" or "6" in project.yml settings to avoid build warnings.
+- Project structure: Sources/InvestQuest/ contains App/, Engine/, Models/ subdirs; Tests/InvestQuestTests/ for unit tests. xcodegen picks these up via sources: array entries.

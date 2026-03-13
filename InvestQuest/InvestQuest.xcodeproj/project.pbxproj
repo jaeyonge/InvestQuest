@@ -7,12 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		34A7EE08062E719FD7E4DA1A /* GameProgressService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF9513FA53EFE8C237792807 /* GameProgressService.swift */; };
 		38BF5E11C5E5562E494E944E /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2438DEBC10968E2619F530BD /* ContentView.swift */; };
+		5CB300BC907B64637C725D04 /* GameProgressServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC299FF9C333F56A42FA509D /* GameProgressServiceTests.swift */; };
 		5D48F79AF30496C5E767FF62 /* MarketSimulationEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6830E433BA9B3325B227DE6B /* MarketSimulationEngineTests.swift */; };
 		67316289E45B710A3BC5930B /* InvestQuestApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E41074C5475D7E80A84DBFB /* InvestQuestApp.swift */; };
 		A6FFA3F915A0103EBF53E24E /* SimulationProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7365AD069F957FD7EEAF3F49 /* SimulationProtocol.swift */; };
 		A84C8591D0AD3DA988122FBB /* GameProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0DBCB1B62809D55B5CCC1B5 /* GameProgress.swift */; };
 		B8AD709AA3A4FB6B8DF83CC1 /* MarketSimulationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71B110767F06DC83A48F3289 /* MarketSimulationEngine.swift */; };
+		C6096FB41F0397735B2FAAB6 /* PhaseConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = E95D72095D9E91E5F6621B62 /* PhaseConfig.swift */; };
+		D37E71570EE5E32DC27971A6 /* PhaseMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F3620ECD4A5F6D9C176245 /* PhaseMapView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -34,7 +38,11 @@
 		6830E433BA9B3325B227DE6B /* MarketSimulationEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketSimulationEngineTests.swift; sourceTree = "<group>"; };
 		71B110767F06DC83A48F3289 /* MarketSimulationEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketSimulationEngine.swift; sourceTree = "<group>"; };
 		7365AD069F957FD7EEAF3F49 /* SimulationProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulationProtocol.swift; sourceTree = "<group>"; };
+		AC299FF9C333F56A42FA509D /* GameProgressServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameProgressServiceTests.swift; sourceTree = "<group>"; };
+		E1F3620ECD4A5F6D9C176245 /* PhaseMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhaseMapView.swift; sourceTree = "<group>"; };
+		E95D72095D9E91E5F6621B62 /* PhaseConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhaseConfig.swift; sourceTree = "<group>"; };
 		F0DBCB1B62809D55B5CCC1B5 /* GameProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameProgress.swift; sourceTree = "<group>"; };
+		FF9513FA53EFE8C237792807 /* GameProgressService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameProgressService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -59,6 +67,7 @@
 			isa = PBXGroup;
 			children = (
 				F0DBCB1B62809D55B5CCC1B5 /* GameProgress.swift */,
+				E95D72095D9E91E5F6621B62 /* PhaseConfig.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -75,6 +84,7 @@
 		6207C63A33105FA1A57FB39C /* InvestQuestTests */ = {
 			isa = PBXGroup;
 			children = (
+				AC299FF9C333F56A42FA509D /* GameProgressServiceTests.swift */,
 				6830E433BA9B3325B227DE6B /* MarketSimulationEngineTests.swift */,
 			);
 			path = InvestQuestTests;
@@ -86,8 +96,26 @@
 				D38BA68EA138B3F77B636FDE /* App */,
 				BFA3592933A955A6B482D21D /* Engine */,
 				52493EAEDE7BE9F67FCDE028 /* Models */,
+				6D9EC133796D89F5A5FD1116 /* Progression */,
+				7A9483DA8EFB2907C33D476C /* Views */,
 			);
 			path = InvestQuest;
+			sourceTree = "<group>";
+		};
+		6D9EC133796D89F5A5FD1116 /* Progression */ = {
+			isa = PBXGroup;
+			children = (
+				FF9513FA53EFE8C237792807 /* GameProgressService.swift */,
+			);
+			path = Progression;
+			sourceTree = "<group>";
+		};
+		7A9483DA8EFB2907C33D476C /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				E1F3620ECD4A5F6D9C176245 /* PhaseMapView.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 		B9E96979564C7F7B5D901055 /* Sources */ = {
@@ -195,6 +223,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5CB300BC907B64637C725D04 /* GameProgressServiceTests.swift in Sources */,
 				5D48F79AF30496C5E767FF62 /* MarketSimulationEngineTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -205,8 +234,11 @@
 			files = (
 				38BF5E11C5E5562E494E944E /* ContentView.swift in Sources */,
 				A84C8591D0AD3DA988122FBB /* GameProgress.swift in Sources */,
+				34A7EE08062E719FD7E4DA1A /* GameProgressService.swift in Sources */,
 				67316289E45B710A3BC5930B /* InvestQuestApp.swift in Sources */,
 				B8AD709AA3A4FB6B8DF83CC1 /* MarketSimulationEngine.swift in Sources */,
+				C6096FB41F0397735B2FAAB6 /* PhaseConfig.swift in Sources */,
+				D37E71570EE5E32DC27971A6 /* PhaseMapView.swift in Sources */,
 				A6FFA3F915A0103EBF53E24E /* SimulationProtocol.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
