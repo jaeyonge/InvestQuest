@@ -50,6 +50,7 @@ struct PhaseSummaryView: View {
             if !viewModel.isPersisted {
                 viewModel.persistCompletion(modelContext: modelContext)
             }
+            HapticFeedbackService.shared.fireAchievement()
         }
     }
 }

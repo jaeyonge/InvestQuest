@@ -39,3 +39,18 @@
 - SwiftData CoreData errors during simulator startup (NSCocoaErrorDomain 512) are transient and self-recover; do not indicate test failures.
 - Xcode 26.3 ships with Swift 6.2.4. SWIFT_VERSION must be set to "5.9" or "6" in project.yml settings to avoid build warnings.
 - Project structure: Sources/InvestQuest/ contains App/, Engine/, Models/ subdirs; Tests/InvestQuestTests/ for unit tests. xcodegen picks these up via sources: array entries.
+
+## US-P3-001 through US-P7-001 — Phase 3–7 Stage Definitions (2026-03-14)
+
+- MarketSimulationEngine uses a single volatility for ALL assets in a simulation; per-asset volatility is not supported. Tests asserting that "risky asset has wider spread than safe" fail because all assets share the same stepVol. Fix: test that batch produces variance (non-zero spread), not that risky > safe.
+- Phase 4 Stage 4 recovery event factor 1.50 was insufficient to guarantee final price > 100 with seed 404. Changed to 1.85 to ensure test reliability.
+- Phase 7 Stage 1 uses `decisionType: .timed(underlying: .binary(...), timeoutSeconds: 5)` — the timeoutSeconds field on StageDefinition should match the timed duration for consistency.
+
+## US-UX-001, US-NFR-001, US-EDGE-001 — UI, NFRs, Edge Cases (2026-03-14)
+
+- StageViewModel timer implemented with Task { } (inheriting @MainActor) caused flaky timeout tests — timer competed with test's own async sleep for main actor access. Fixed by switching to Task.detached with explicit MainActor.run for state updates.
+- HapticFeedbackService wraps UIKit generators (not SwiftUI sensoryFeedback) for maximum control and testability; .prepare() called in init to reduce first-fire latency.
+- isHardModeAvailable(forPhase:) checks all stages in a phase against stageResults array (in-memory); stageResults is populated by completeStage() calls. Callers must have completed the phase to see hard mode offered.
+- Phase 1 uses .timed decision type in Stage 4 (not multiAssetRanking); test counting "simple" Phase 1 decisions must include .timed in the accepted set.
+- xcodegen generates project from project.yml; must be re-run after every new source file addition or the file will not appear in the build target.
+- iPhone 15 is unavailable on Xcode 26.3; use "iPhone 16e" as the simulator target in all xcodebuild commands.

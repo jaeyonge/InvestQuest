@@ -4,20 +4,39 @@ struct ResultView: View {
     let outcome: StageOutcome
     let onContinue: () -> Void
 
+    @State private var starsVisible: Bool = false
+
+    private var isGain: Bool { outcome.portfolioFinalValue >= 100.0 }
+
     var body: some View {
         VStack(spacing: 24) {
             Text("Result")
                 .font(.title2.bold())
 
-            // Star rating
+            // Star rating — animated reveal
             HStack(spacing: 8) {
                 ForEach(1...3, id: \.self) { star in
                     Image(systemName: star <= outcome.starRating ? "star.fill" : "star")
                         .font(.title)
                         .foregroundStyle(star <= outcome.starRating ? .yellow : .gray)
+                        .scaleEffect(starsVisible ? 1.0 : 0.4)
+                        .animation(.spring(response: 0.4, dampingFraction: 0.6)
+                                    .delay(Double(star) * 0.12),
+                                   value: starsVisible)
                 }
             }
             .accessibilityLabel("\(outcome.starRating) out of 3 stars")
+            .onAppear {
+                starsVisible = true
+                // Haptic feedback: rewarding for high score, consequential for low
+                if outcome.starRating == 3 {
+                    HapticFeedbackService.shared.fireAchievement()
+                } else if outcome.starRating == 1 {
+                    HapticFeedbackService.shared.fireLossWarning()
+                } else {
+                    HapticFeedbackService.shared.fireMilestone()
+                }
+            }
 
             // Gain/loss
             let gain = outcome.portfolioFinalValue - 100.0 * (outcome.portfolioFinalValue > 0 ? 1 : 1)

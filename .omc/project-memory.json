@@ -55,68 +55,116 @@
     },
     {
       "path": "InvestQuest/Sources/InvestQuest/ViewModels/StageViewModel.swift",
-      "accessCount": 3,
-      "lastAccessed": 1773418454555,
+      "accessCount": 4,
+      "lastAccessed": 1773419110899,
       "type": "file"
     },
     {
       "path": "InvestQuest/Tests/InvestQuestTests/EdgeCaseTests.swift",
-      "accessCount": 3,
-      "lastAccessed": 1773418469540,
-      "type": "file"
-    },
-    {
-      "path": "InvestQuest/Tests/InvestQuestTests/StageViewModelTests.swift",
-      "accessCount": 2,
-      "lastAccessed": 1773417108493,
-      "type": "file"
-    },
-    {
-      "path": "InvestQuest/Tests/InvestQuestTests/Phase3Tests.swift",
-      "accessCount": 2,
-      "lastAccessed": 1773417944073,
-      "type": "file"
-    },
-    {
-      "path": "InvestQuest/Sources/InvestQuest/Phases/Phase4/Phase4StageDefinitions.swift",
-      "accessCount": 2,
-      "lastAccessed": 1773417951169,
+      "accessCount": 4,
+      "lastAccessed": 1773419166871,
       "type": "file"
     },
     {
       "path": "InvestQuest/Sources/InvestQuest/Progression/GameProgressService.swift",
-      "accessCount": 2,
-      "lastAccessed": 1773418261903,
+      "accessCount": 3,
+      "lastAccessed": 1773419110664,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/Phases/Phase4/Phase4StageDefinitions.swift",
+      "accessCount": 3,
+      "lastAccessed": 1773419128685,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Tests/InvestQuestTests/StageViewModelTests.swift",
+      "accessCount": 3,
+      "lastAccessed": 1773419147865,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Tests/InvestQuestTests/Phase3Tests.swift",
+      "accessCount": 3,
+      "lastAccessed": 1773419157854,
       "type": "file"
     },
     {
       "path": "InvestQuest/Tests/InvestQuestTests/CoreUITests.swift",
+      "accessCount": 3,
+      "lastAccessed": 1773419167306,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/Views/Gameplay/ResultView.swift",
+      "accessCount": 3,
+      "lastAccessed": 1773419340321,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/Views/PhaseSummaryView.swift",
+      "accessCount": 3,
+      "lastAccessed": 1773419345131,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/Views/Gameplay/SimulationView.swift",
+      "accessCount": 3,
+      "lastAccessed": 1773419357116,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest",
       "accessCount": 2,
-      "lastAccessed": 1773418736722,
-      "type": "file"
+      "lastAccessed": 1773419099876,
+      "type": "directory"
     },
     {
-      "path": "InvestQuest/Tests/InvestQuestTests/Phase4Tests.swift",
-      "accessCount": 1,
-      "lastAccessed": 1773416828021,
-      "type": "file"
-    },
-    {
-      "path": "InvestQuest/Tests/InvestQuestTests/Phase7Tests.swift",
-      "accessCount": 1,
-      "lastAccessed": 1773416867109,
+      "path": "InvestQuest/Sources/InvestQuest/Engine/MarketSimulationEngine.swift",
+      "accessCount": 2,
+      "lastAccessed": 1773419107243,
       "type": "file"
     },
     {
       "path": "InvestQuest/Sources/InvestQuest/Models/StageDefinition.swift",
-      "accessCount": 1,
-      "lastAccessed": 1773416873346,
+      "accessCount": 2,
+      "lastAccessed": 1773419108830,
       "type": "file"
     },
     {
-      "path": "InvestQuest/Sources/InvestQuest/Engine/MarketSimulationEngine.swift",
-      "accessCount": 1,
-      "lastAccessed": 1773417840899,
+      "path": "InvestQuest/Sources/InvestQuest/Views/PhaseMapView.swift",
+      "accessCount": 2,
+      "lastAccessed": 1773419117129,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/Services/HapticFeedbackService.swift",
+      "accessCount": 2,
+      "lastAccessed": 1773419119605,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/Views/Gameplay/DecisionView.swift",
+      "accessCount": 2,
+      "lastAccessed": 1773419137225,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Tests/InvestQuestTests/Phase4Tests.swift",
+      "accessCount": 2,
+      "lastAccessed": 1773419158601,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Tests/InvestQuestTests/Phase7Tests.swift",
+      "accessCount": 2,
+      "lastAccessed": 1773419160160,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Tests/InvestQuestTests/NonFunctionalRequirementsTests.swift",
+      "accessCount": 2,
+      "lastAccessed": 1773419160419,
       "type": "file"
     },
     {
@@ -132,33 +180,165 @@
       "type": "directory"
     },
     {
-      "path": "InvestQuest/Sources/InvestQuest/Views/PhaseMapView.swift",
+      "path": "learnings.md",
       "accessCount": 1,
-      "lastAccessed": 1773418167307,
+      "lastAccessed": 1773419046183,
       "type": "file"
     },
     {
-      "path": "InvestQuest/Sources/InvestQuest/Views/Gameplay/DecisionView.swift",
+      "path": "InvestQuest/Sources/InvestQuest/Engine/SimulationProtocol.swift",
       "accessCount": 1,
-      "lastAccessed": 1773418167679,
+      "lastAccessed": 1773419106756,
       "type": "file"
     },
     {
-      "path": "InvestQuest/Sources/InvestQuest/Views/Gameplay/SimulationView.swift",
+      "path": "InvestQuest/Sources/InvestQuest/Models/GameProgress.swift",
       "accessCount": 1,
-      "lastAccessed": 1773418211595,
+      "lastAccessed": 1773419108475,
       "type": "file"
     },
     {
-      "path": "InvestQuest/Sources/InvestQuest/Services/HapticFeedbackService.swift",
+      "path": "InvestQuest/Sources/InvestQuest/Models/PhaseConfig.swift",
       "accessCount": 1,
-      "lastAccessed": 1773418246060,
+      "lastAccessed": 1773419109593,
       "type": "file"
     },
     {
-      "path": "InvestQuest/Tests/InvestQuestTests/NonFunctionalRequirementsTests.swift",
+      "path": "InvestQuest/Sources/InvestQuest/Models/PhaseCompletionData.swift",
       "accessCount": 1,
-      "lastAccessed": 1773418339349,
+      "lastAccessed": 1773419109998,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/ViewModels/PhaseCompletionViewModel.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773419115623,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/ViewModels/AppViewModel.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773419116551,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/Views/Onboarding/IntroAnimationView.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773419119243,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/App/InvestQuestApp.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773419119922,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/App/ContentView.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773419120180,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/Phases/Phase1/Phase1StageDefinitions.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773419125555,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/Phases/Phase2/Phase2StageDefinitions.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773419126551,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/Phases/Phase2/BusinessFundamentals.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773419127020,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/Phases/Phase3/Phase3StageDefinitions.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773419127786,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/Phases/Phase5/Phase5StageDefinitions.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773419129419,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/Phases/Phase6/Phase6StageDefinitions.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773419129758,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/Phases/Phase7/Phase7StageDefinitions.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773419130014,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/Views/Gameplay/StageBriefingView.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773419136587,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/Views/Gameplay/InsightCardView.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773419139733,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Tests/InvestQuestTests/MarketSimulationEngineTests.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773419146553,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Tests/InvestQuestTests/GameProgressServiceTests.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773419147141,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Tests/InvestQuestTests/PhaseCompletionTests.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773419148809,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Tests/InvestQuestTests/FirstTimeUserExperienceTests.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773419149812,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Tests/InvestQuestTests/Phase1Tests.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773419156385,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Tests/InvestQuestTests/Phase2Tests.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773419157297,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Tests/InvestQuestTests/Phase5Tests.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773419159118,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Tests/InvestQuestTests/Phase6Tests.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773419159589,
       "type": "file"
     }
   ],

@@ -75,9 +75,25 @@ struct SimulationView: View {
         .task {
             // Auto-advance through periods
             let count = viewModel.simulationPrices.first?.count ?? 0
-            for _ in 0..<(count - 1) {
+            let midpoint = (count - 1) / 2
+            for step in 0..<(count - 1) {
                 try? await Task.sleep(nanoseconds: UInt64(animationInterval * 1_000_000_000))
+                let prevPeriod = viewModel.currentPeriod
                 viewModel.advanceSimulationPeriod()
+                let newPeriod = viewModel.currentPeriod
+
+                // Haptic: crash event when any asset drops >30% in a single period
+                let prices = viewModel.simulationPrices
+                let isCrash = prices.contains { history in
+                    guard newPeriod < history.count, prevPeriod < history.count,
+                          history[prevPeriod] > 0 else { return false }
+                    return history[newPeriod] / history[prevPeriod] < 0.70
+                }
+                if isCrash {
+                    HapticFeedbackService.shared.fireCrashEvent()
+                } else if step == midpoint {
+                    HapticFeedbackService.shared.fireMilestone()
+                }
             }
         }
     }
