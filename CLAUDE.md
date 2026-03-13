@@ -103,8 +103,8 @@ Refer to `InvestQuest_PRD_TierA.docx` for the full product specification includi
         "Stage 2 unlocks automatically after Stage 1 completion"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "2026-03-14: IntroAnimationView with 4s auto-advance, AppViewModel routing (intro→phaseMap), GameProgress.hasSeenIntro flag, ContentView simplified. 82/82 tests pass."
     },
     {
       "id": "US-P1-001",

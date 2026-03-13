@@ -1,3 +1,9 @@
+## US-CORE-005 — First-Time User Experience (2026-03-14)
+
+- ContentView using @Query to read GameProgress directly (instead of through a ViewModel) is cleaner for SwiftUI — avoids the need to synchronize ViewModel state with @Query state.
+- AppViewModel is still useful for testability even if ContentView does not use it directly.
+- GameProgress.hasSeenIntro: adding new fields to a SwiftData @Model requires no migration for in-memory test containers; production would need migration if upgrading.
+
 ## US-CORE-004 — Phase Completion Flow (2026-03-14)
 
 - PhaseCompletionRecord must be added to modelContainer(for:) in InvestQuestApp.swift alongside other SwiftData models; forgetting this causes container creation to fail.
