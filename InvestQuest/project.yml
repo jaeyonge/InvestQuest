@@ -1,0 +1,55 @@
+name: InvestQuest
+options:
+  bundleIdPrefix: com.investquest
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "16.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+
+targets:
+  InvestQuest:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - Sources/InvestQuest
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.investquest.app
+        INFOPLIST_FILE: Sources/InvestQuest/App/Info.plist
+        SWIFT_VERSION: "5.9"
+        DEVELOPMENT_TEAM: ""
+        CODE_SIGN_STYLE: Automatic
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    dependencies: []
+
+  InvestQuestTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - Tests/InvestQuestTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.investquest.tests
+        SWIFT_VERSION: "5.9"
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: InvestQuest
+
+schemes:
+  InvestQuest:
+    build:
+      targets:
+        InvestQuest: all
+        InvestQuestTests: [test]
+    test:
+      targets:
+        - InvestQuestTests
+      commandLineArguments:
+        "-AppleLanguages (en)": true
