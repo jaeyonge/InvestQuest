@@ -104,6 +104,18 @@ final class GameProgressService: ObservableObject {
         return PhaseConfig.all.first(where: { $0.id == lastCompleted })
     }
 
+    // MARK: - Hard mode
+
+    /// Returns true when all stages in a phase have been completed with a 3-star score (score ≥ 80).
+    /// When true, the UI should offer a "hard mode" replay with tighter margins and less information.
+    func isHardModeAvailable(forPhase phaseId: Int) -> Bool {
+        guard let config = PhaseConfig.all.first(where: { $0.id == phaseId }) else { return false }
+        return (1...config.stageCount).allSatisfy { stage in
+            let result = stageResults.first(where: { $0.phase == phaseId && $0.stage == stage })
+            return (result?.score ?? 0) >= 80  // 80+ = 3-star
+        }
+    }
+
     // MARK: - Private
 
     private func completePhase(phaseId: Int, modelContext: ModelContext) {

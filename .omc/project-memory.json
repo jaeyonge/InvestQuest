@@ -1,0 +1,166 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1773416779627,
+  "projectRoot": "/Users/jason/investing-simulation/260313",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "InvestQuest": {
+      "path": "InvestQuest",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1773416779606,
+      "keyFiles": [
+        "project.yml"
+      ]
+    },
+    "InvestQuest/Tests": {
+      "path": "InvestQuest/Tests",
+      "purpose": "Test files",
+      "fileCount": 0,
+      "lastAccessed": 1773416779606,
+      "keyFiles": []
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "CLAUDE.md",
+      "accessCount": 8,
+      "lastAccessed": 1773419003649,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/ViewModels/StageViewModel.swift",
+      "accessCount": 3,
+      "lastAccessed": 1773418454555,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Tests/InvestQuestTests/EdgeCaseTests.swift",
+      "accessCount": 3,
+      "lastAccessed": 1773418469540,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Tests/InvestQuestTests/StageViewModelTests.swift",
+      "accessCount": 2,
+      "lastAccessed": 1773417108493,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Tests/InvestQuestTests/Phase3Tests.swift",
+      "accessCount": 2,
+      "lastAccessed": 1773417944073,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/Phases/Phase4/Phase4StageDefinitions.swift",
+      "accessCount": 2,
+      "lastAccessed": 1773417951169,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/Progression/GameProgressService.swift",
+      "accessCount": 2,
+      "lastAccessed": 1773418261903,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Tests/InvestQuestTests/CoreUITests.swift",
+      "accessCount": 2,
+      "lastAccessed": 1773418736722,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Tests/InvestQuestTests/Phase4Tests.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773416828021,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Tests/InvestQuestTests/Phase7Tests.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773416867109,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/Models/StageDefinition.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773416873346,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/Engine/MarketSimulationEngine.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773417840899,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/Views",
+      "accessCount": 1,
+      "lastAccessed": 1773418143438,
+      "type": "directory"
+    },
+    {
+      "path": "InvestQuest/Tests",
+      "accessCount": 1,
+      "lastAccessed": 1773418143741,
+      "type": "directory"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/Views/PhaseMapView.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773418167307,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/Views/Gameplay/DecisionView.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773418167679,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/Views/Gameplay/SimulationView.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773418211595,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Sources/InvestQuest/Services/HapticFeedbackService.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773418246060,
+      "type": "file"
+    },
+    {
+      "path": "InvestQuest/Tests/InvestQuestTests/NonFunctionalRequirementsTests.swift",
+      "accessCount": 1,
+      "lastAccessed": 1773418339349,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

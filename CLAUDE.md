@@ -137,8 +137,8 @@ Refer to `InvestQuest_PRD_TierA.docx` for the full product specification includi
         "Post-phase concept card explains price vs. value distinction"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "2026-03-14: BusinessFundamentals model, SentimentIndicator, Phase2OpportunityFactory, Phase2StageDefinitions (5 stages). 121/121 tests pass."
     },
     {
       "id": "US-P3-001",
@@ -153,8 +153,8 @@ Refer to `InvestQuest_PRD_TierA.docx` for the full product specification includi
         "Post-phase concept card explains the risk-return tradeoff"
       ],
       "priority": 8,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "2026-03-14: Phase3StageDefinitions (4 stages): allocationSlider for S1/S2, multiAssetRanking for S3, binary scam trap for S4. Tail-risk event injection on Gamma Fund at period 7 (factor 0.30). Scam fund collapses at period 5 (factor 0.05). Phase3Tests all pass."
     },
     {
       "id": "US-P4-001",
@@ -170,8 +170,8 @@ Refer to `InvestQuest_PRD_TierA.docx` for the full product specification includi
         "Post-phase concept card explains compounding"
       ],
       "priority": 9,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "2026-03-14: Phase4StageDefinitions (4 stages): 20yr reinvest, 35yr head-start, 30yr fee drain, 20yr dip+recovery. Recovery factor 1.85 ensures simulation ends above start price. Phase4Tests all pass."
     },
     {
       "id": "US-P5-001",
@@ -185,8 +185,8 @@ Refer to `InvestQuest_PRD_TierA.docx` for the full product specification includi
         "Post-phase concept card names loss aversion and disposition effect"
       ],
       "priority": 10,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "2026-03-14: Phase5StageDefinitions (4 stages): single-asset hold, disposition effect 5-asset ranking, stop-loss binary, -40% recovery scenario. Phase5Tests all pass."
     },
     {
       "id": "US-P6-001",
@@ -200,8 +200,8 @@ Refer to `InvestQuest_PRD_TierA.docx` for the full product specification includi
         "Post-phase concept card explains portfolio construction basics"
       ],
       "priority": 11,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "2026-03-14: Phase6StageDefinitions (4 stages): all-in vs split, 20x batch, bankruptcy event (factor 0.02 on concentrated), false diversification 5-asset ranking. Phase6Tests all pass."
     },
     {
       "id": "US-P7-001",
@@ -216,8 +216,8 @@ Refer to `InvestQuest_PRD_TierA.docx` for the full product specification includi
         "Review overlay shows where emotions overrode logic with comparison to optimal decisions"
       ],
       "priority": 12,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "2026-03-14: Phase7StageDefinitions (4 stages): timed binary (5s) for urgency, FOMO leaderboard spike+collapse, anchoring pass-vs-buy, behavioral review binary. All 4 named biases in conceptCardText. Phase7Tests all pass."
     },
     {
       "id": "US-UX-001",
@@ -233,8 +233,8 @@ Refer to `InvestQuest_PRD_TierA.docx` for the full product specification includi
         "Gain animations feel rewarding; loss animations feel consequential but not punishing"
       ],
       "priority": 13,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "2026-03-14: PhaseMapView (7 nodes, lock/unlock, current highlight, accessibilityLabel), DecisionView (binary/slider/ranking/timed), HapticFeedbackService (crash/milestone/achievement), Color.investGreen/investRed (colorblind-safe), progressive disclosure via PhaseConfig. CoreUITests all pass."
     },
     {
       "id": "US-NFR-001",
@@ -251,8 +251,8 @@ Refer to `InvestQuest_PRD_TierA.docx` for the full product specification includi
         "No personal financial data is collected; analytics are limited to gameplay behavior only"
       ],
       "priority": 14,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "2026-03-14: All 26 stages simulate in <1s total. Engine is purely computational (no network). SwiftData for offline persistence. accessibilityLabel on PhaseMapView nodes. Color.investGreen/investRed for colorblind safety. Text in StageDefinition strings (localisable). GameProgress/DecisionRecord store no PII. NonFunctionalRequirementsTests all pass."
     },
     {
       "id": "US-EDGE-001",
@@ -268,8 +268,8 @@ Refer to `InvestQuest_PRD_TierA.docx` for the full product specification includi
         "Returning user after long absence sees recap of last phase concept and warm-up suggestion"
       ],
       "priority": 15,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "2026-03-14: Timeout→holdCash via Task.detached in StageViewModel. isHardModeAvailable(forPhase:) in GameProgressService (all stages ≥80 score). hintForCurrentFailures returns hintText at 3 failures, conceptExplanation at 5. Phase/stage locking enforced. SwiftData auto-save on every decision. isReturningAfterLongAbsence + recapPhase for 7-day absence. EdgeCaseTests all pass."
     }
   ]
 }

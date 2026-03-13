@@ -84,14 +84,10 @@ final class StageViewModel: ObservableObject {
         let timeout = definition.timeoutSeconds
         guard timeout > 0 else { return }
         timeRemaining = timeout
-        timeoutTask = Task {
-            var remaining = timeout
-            while remaining > 0 && !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 200_000_000)
-                remaining -= 0.2
-                self.timeRemaining = max(0, remaining)
-            }
-            if !Task.isCancelled {
+        timeoutTask = Task.detached { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
+            guard let self, !Task.isCancelled else { return }
+            await MainActor.run {
                 self.submitDecision(.holdCash)
             }
         }
@@ -156,6 +152,12 @@ final class StageViewModel: ObservableObject {
         if failureCount >= 3 { return definition.hintText }
         return nil
     }
+
+    /// The definition's hint text (shown after 3 failures). Exposed for UI and testing.
+    var definitionHintText: String { definition.hintText }
+
+    /// The definition's full concept explanation (shown after 5 failures). Exposed for UI and testing.
+    var definitionConceptText: String { definition.conceptExplanation }
 
     // MARK: - Computed helpers
 
