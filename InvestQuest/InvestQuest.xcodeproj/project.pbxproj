@@ -26,14 +26,17 @@
 		B002186DB182526B317BC32F /* Phase1Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD5E44D58B4C585F6E5F4ABE /* Phase1Tests.swift */; };
 		B8AD709AA3A4FB6B8DF83CC1 /* MarketSimulationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71B110767F06DC83A48F3289 /* MarketSimulationEngine.swift */; };
 		B96BDFD692C645FDEF77C79F /* StageDefinition.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD226795679122833F2F1F20 /* StageDefinition.swift */; };
+		BE8A3B06D869BFCC56517ACA /* Phase2StageDefinitions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCA304D83499CC4AFC29FEB0 /* Phase2StageDefinitions.swift */; };
 		C49DBCA82E6988FFC0790054 /* FirstTimeUserExperienceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7DF00E7F9A9E61DA0026EFA /* FirstTimeUserExperienceTests.swift */; };
 		C6096FB41F0397735B2FAAB6 /* PhaseConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = E95D72095D9E91E5F6621B62 /* PhaseConfig.swift */; };
 		CDD23A4A65AF1B597FD0EE73 /* InsightCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 022352584450697B8CD24DF3 /* InsightCardView.swift */; };
 		CF84C48CC9A7C37B2A15E0DE /* PhaseCompletionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49CFF01300CFBBBD567020B8 /* PhaseCompletionViewModel.swift */; };
 		D37E71570EE5E32DC27971A6 /* PhaseMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F3620ECD4A5F6D9C176245 /* PhaseMapView.swift */; };
 		D691094A7EB29118139F50B6 /* StageViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6C48D98A895E1A21A479136 /* StageViewModel.swift */; };
+		E08C01FE066D78378CE9B5FE /* BusinessFundamentals.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8087911E4E33EB7AC4FEFE1 /* BusinessFundamentals.swift */; };
 		E70E5187EE96769B4433FDD9 /* Phase1StageDefinitions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667606D689E821CCEF0E50CB /* Phase1StageDefinitions.swift */; };
 		E7983C08F2611C36B242AF82 /* IntroAnimationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5F209B97F2868A6B82C143B /* IntroAnimationView.swift */; };
+		F69AAE87D79B373A5B0CBA7C /* Phase2Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADD1FD7AC6F24F70C123AA7D /* Phase2Tests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -65,14 +68,17 @@
 		71B110767F06DC83A48F3289 /* MarketSimulationEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketSimulationEngine.swift; sourceTree = "<group>"; };
 		7365AD069F957FD7EEAF3F49 /* SimulationProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulationProtocol.swift; sourceTree = "<group>"; };
 		AC299FF9C333F56A42FA509D /* GameProgressServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameProgressServiceTests.swift; sourceTree = "<group>"; };
+		ADD1FD7AC6F24F70C123AA7D /* Phase2Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Phase2Tests.swift; sourceTree = "<group>"; };
 		B687FE67B43DED01E10F3FCC /* PhaseCompletionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhaseCompletionTests.swift; sourceTree = "<group>"; };
 		BD226795679122833F2F1F20 /* StageDefinition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageDefinition.swift; sourceTree = "<group>"; };
 		BFBF02A021672920709D3234 /* SimulationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulationView.swift; sourceTree = "<group>"; };
 		CD5E44D58B4C585F6E5F4ABE /* Phase1Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Phase1Tests.swift; sourceTree = "<group>"; };
 		D1F4575D4835D7ED9520F5AD /* StageViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageViewModelTests.swift; sourceTree = "<group>"; };
 		D6C48D98A895E1A21A479136 /* StageViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageViewModel.swift; sourceTree = "<group>"; };
+		DCA304D83499CC4AFC29FEB0 /* Phase2StageDefinitions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Phase2StageDefinitions.swift; sourceTree = "<group>"; };
 		E1F3620ECD4A5F6D9C176245 /* PhaseMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhaseMapView.swift; sourceTree = "<group>"; };
 		E7DF00E7F9A9E61DA0026EFA /* FirstTimeUserExperienceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstTimeUserExperienceTests.swift; sourceTree = "<group>"; };
+		E8087911E4E33EB7AC4FEFE1 /* BusinessFundamentals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BusinessFundamentals.swift; sourceTree = "<group>"; };
 		E95D72095D9E91E5F6621B62 /* PhaseConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhaseConfig.swift; sourceTree = "<group>"; };
 		F0DBCB1B62809D55B5CCC1B5 /* GameProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameProgress.swift; sourceTree = "<group>"; };
 		F5F209B97F2868A6B82C143B /* IntroAnimationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntroAnimationView.swift; sourceTree = "<group>"; };
@@ -92,6 +98,7 @@
 			isa = PBXGroup;
 			children = (
 				F6ACFF13658C13CE24486001 /* Phase1 */,
+				3F6B248840FC98574ABEFF72 /* Phase2 */,
 			);
 			path = Phases;
 			sourceTree = "<group>";
@@ -103,6 +110,15 @@
 				06F00A5CE37F9A6E26A6B4FC /* InvestQuestTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		3F6B248840FC98574ABEFF72 /* Phase2 */ = {
+			isa = PBXGroup;
+			children = (
+				E8087911E4E33EB7AC4FEFE1 /* BusinessFundamentals.swift */,
+				DCA304D83499CC4AFC29FEB0 /* Phase2StageDefinitions.swift */,
+			);
+			path = Phase2;
 			sourceTree = "<group>";
 		};
 		52493EAEDE7BE9F67FCDE028 /* Models */ = {
@@ -132,6 +148,7 @@
 				AC299FF9C333F56A42FA509D /* GameProgressServiceTests.swift */,
 				6830E433BA9B3325B227DE6B /* MarketSimulationEngineTests.swift */,
 				CD5E44D58B4C585F6E5F4ABE /* Phase1Tests.swift */,
+				ADD1FD7AC6F24F70C123AA7D /* Phase2Tests.swift */,
 				B687FE67B43DED01E10F3FCC /* PhaseCompletionTests.swift */,
 				D1F4575D4835D7ED9520F5AD /* StageViewModelTests.swift */,
 			);
@@ -318,6 +335,7 @@
 				5CB300BC907B64637C725D04 /* GameProgressServiceTests.swift in Sources */,
 				5D48F79AF30496C5E767FF62 /* MarketSimulationEngineTests.swift in Sources */,
 				B002186DB182526B317BC32F /* Phase1Tests.swift in Sources */,
+				F69AAE87D79B373A5B0CBA7C /* Phase2Tests.swift in Sources */,
 				806E12EAB7CABB2BCBAC0E37 /* PhaseCompletionTests.swift in Sources */,
 				4428AB4451730E1044C43132 /* StageViewModelTests.swift in Sources */,
 			);
@@ -328,6 +346,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				314688CF6C784D29C5BD57EB /* AppViewModel.swift in Sources */,
+				E08C01FE066D78378CE9B5FE /* BusinessFundamentals.swift in Sources */,
 				38BF5E11C5E5562E494E944E /* ContentView.swift in Sources */,
 				78F737AB5980F326CC673591 /* DecisionView.swift in Sources */,
 				A84C8591D0AD3DA988122FBB /* GameProgress.swift in Sources */,
@@ -337,6 +356,7 @@
 				67316289E45B710A3BC5930B /* InvestQuestApp.swift in Sources */,
 				B8AD709AA3A4FB6B8DF83CC1 /* MarketSimulationEngine.swift in Sources */,
 				E70E5187EE96769B4433FDD9 /* Phase1StageDefinitions.swift in Sources */,
+				BE8A3B06D869BFCC56517ACA /* Phase2StageDefinitions.swift in Sources */,
 				3A5DC52A029A788571C43CD4 /* PhaseCompletionData.swift in Sources */,
 				CF84C48CC9A7C37B2A15E0DE /* PhaseCompletionViewModel.swift in Sources */,
 				C6096FB41F0397735B2FAAB6 /* PhaseConfig.swift in Sources */,

@@ -1,3 +1,9 @@
+## US-P1-001 — Phase 1 (2026-03-14)
+
+- Phase content is organized as static enum with all stage definitions; no new Xcode source groups needed — xcodegen picks up any Swift file under Sources/InvestQuest/.
+- StageConfig.drift encodes the asset's real return; negative drift = inflation erosion, positive = real growth.
+- EventInjection at specific periods creates sudden inflation spikes useful for Stage 4 varying-inflation scenario.
+
 ## US-CORE-005 — First-Time User Experience (2026-03-14)
 
 - ContentView using @Query to read GameProgress directly (instead of through a ViewModel) is cleaner for SwiftUI — avoids the need to synchronize ViewModel state with @Query state.
