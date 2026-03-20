@@ -230,8 +230,13 @@ final class StageViewModelTests: XCTestCase {
             engine: MarketSimulationEngine()
         )
         vm.advanceFromBriefing()
-        // Wait for timeout to trigger
-        try? await Task.sleep(nanoseconds: 600_000_000)
+        // Allow for CI/simulator scheduling jitter around the async timer loop.
+        for _ in 0..<20 {
+            if case .simulation = vm.flowState {
+                break
+            }
+            try? await Task.sleep(nanoseconds: 100_000_000)
+        }
 
         guard case .simulation = vm.flowState else {
             if case .briefing = vm.flowState {

@@ -38,7 +38,7 @@ final class Phase5Tests: XCTestCase {
 
     func testStage1_decisionType_isBinary() {
         let stage = Phase5StageDefinitions.stage1
-        guard case .binary(let a, let b) = stage.decisionType else {
+        guard let (a, b) = TestDataFactory.binaryOptions(from: stage) else {
             XCTFail("Stage 1 must use binary decision type"); return
         }
         XCTAssertTrue(a.lowercased().contains("sell") || b.lowercased().contains("sell"),
@@ -65,7 +65,7 @@ final class Phase5Tests: XCTestCase {
 
     func testStage2_multiAssetRankingDecisionType() {
         let stage = Phase5StageDefinitions.stage2
-        guard case .multiAssetRanking(let assets) = stage.decisionType else {
+        guard let assets = TestDataFactory.rankingAssets(from: stage) else {
             XCTFail("Stage 2 must use multiAssetRanking decision type"); return
         }
         XCTAssertEqual(assets.count, 5, "Stage 2 ranking must include all 5 assets")
@@ -114,7 +114,7 @@ final class Phase5Tests: XCTestCase {
 
     func testStage3_binaryChoice_stopLossVsNone() {
         let stage = Phase5StageDefinitions.stage3
-        guard case .binary(let a, let b) = stage.decisionType else {
+        guard let (a, b) = TestDataFactory.binaryOptions(from: stage) else {
             XCTFail("Stage 3 must use binary decision type"); return
         }
         XCTAssertTrue(a.lowercased().contains("stop") || b.lowercased().contains("stop"),

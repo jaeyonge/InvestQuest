@@ -42,14 +42,31 @@ targets:
     dependencies:
       - target: InvestQuest
 
+  InvestQuestUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - Tests/InvestQuestUITests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.investquest.uitests
+        SWIFT_VERSION: "5.9"
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: InvestQuest
+    dependencies:
+      - target: InvestQuest
+
 schemes:
   InvestQuest:
     build:
       targets:
         InvestQuest: all
         InvestQuestTests: [test]
+        InvestQuestUITests: [test]
     test:
       targets:
         - InvestQuestTests
+        - InvestQuestUITests
       commandLineArguments:
         "-AppleLanguages (en)": true

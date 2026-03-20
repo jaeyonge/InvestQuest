@@ -35,6 +35,20 @@
                ReferencedContainer = "container:InvestQuest.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "A43072F3B4E51067243D755E"
+               BuildableName = "InvestQuestUITests.xctest"
+               BlueprintName = "InvestQuestUITests"
+               ReferencedContainer = "container:InvestQuest.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
@@ -61,6 +75,17 @@
                BlueprintIdentifier = "5323E6F482C2B24462CDBD82"
                BuildableName = "InvestQuestTests.xctest"
                BlueprintName = "InvestQuestTests"
+               ReferencedContainer = "container:InvestQuest.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "A43072F3B4E51067243D755E"
+               BuildableName = "InvestQuestUITests.xctest"
+               BlueprintName = "InvestQuestUITests"
                ReferencedContainer = "container:InvestQuest.xcodeproj">
             </BuildableReference>
          </TestableReference>

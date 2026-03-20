@@ -4,49 +4,68 @@ import SwiftData
 struct PhaseSummaryView: View {
     @StateObject private var viewModel: PhaseCompletionViewModel
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var appViewModel: AppViewModel
+    @Query private var progressRecords: [GameProgress]
 
-    init(phaseId: Int, stageResults: [StageResult]) {
-        _viewModel = StateObject(wrappedValue: PhaseCompletionViewModel(
-            phaseId: phaseId, stageResults: stageResults))
+    init(phaseId: Int) {
+        _viewModel = StateObject(wrappedValue: PhaseCompletionViewModel(phaseId: phaseId))
     }
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 28) {
-                // Phase concept header (AC1)
-                VStack(spacing: 8) {
-                    Text("Phase \(viewModel.completedPhaseConfig.id) Complete!")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Text(viewModel.completedPhaseConfig.concept)
-                        .font(.largeTitle.bold())
-                        .multilineTextAlignment(.center)
-                    Text(viewModel.completedPhaseConfig.title)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+            VStack(spacing: 24) {
+                QuestSectionHeader(
+                    eyebrow: "Phase \(viewModel.completedPhaseConfig.id) Complete",
+                    title: viewModel.completedPhaseConfig.concept,
+                    subtitle: viewModel.completedPhaseConfig.title
+                )
+
+                HStack(spacing: 14) {
+                    QuestMetricCard(
+                        label: "Average Score",
+                        value: "\(viewModel.averageScore)",
+                        detail: "\(viewModel.performanceData.count) stages recorded",
+                        accent: AppTheme.accent
+                    )
+                    QuestMetricCard(
+                        label: "Status",
+                        value: "Unlocked",
+                        detail: viewModel.nextPhaseConfig == nil ? "Final phase cleared" : "Next lesson ready",
+                        accent: AppTheme.highlight
+                    )
                 }
 
-                // Badge (AC3)
                 if let badge = viewModel.badge {
                     BadgeView(badge: badge)
                 }
 
-                // Performance dashboard (AC2)
                 if !viewModel.performanceData.isEmpty {
-                    PerformanceDashboardView(data: viewModel.performanceData,
-                                            averageScore: viewModel.averageScore)
+                    PerformanceDashboardView(data: viewModel.performanceData, averageScore: viewModel.averageScore)
                 }
 
-                // Next phase teaser (AC4)
                 if let next = viewModel.nextPhaseConfig {
                     NextPhaseTeaserView(config: next)
                 }
 
-                Spacer(minLength: 40)
+                if let progress = progressRecords.first {
+                    let service = GameProgressService(modelContext: modelContext, progress: progress)
+                    Button {
+                        appViewModel.closePhaseSummary(using: service)
+                    } label: {
+                        Text("Continue Journey")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(QuestPrimaryButtonStyle())
+                }
             }
-            .padding()
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.bottom, 32)
         }
+        .foregroundStyle(AppTheme.textPrimary)
+        .questScreenBackground()
         .onAppear {
+            viewModel.loadPerformance(modelContext: modelContext)
             if !viewModel.isPersisted {
                 viewModel.persistCompletion(modelContext: modelContext)
             }
@@ -55,124 +74,126 @@ struct PhaseSummaryView: View {
     }
 }
 
-// MARK: - Badge View
-
 struct BadgeView: View {
     let badge: Badge
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
             ZStack {
                 Circle()
-                    .fill(Color(hex: badge.color).opacity(0.15))
-                    .frame(width: 100, height: 100)
+                    .fill(Color(hex: badge.color).opacity(0.14))
+                    .frame(width: 132, height: 132)
                 Circle()
-                    .stroke(Color(hex: badge.color), lineWidth: 3)
-                    .frame(width: 100, height: 100)
+                    .stroke(Color(hex: badge.color).opacity(0.4), lineWidth: 2)
+                    .frame(width: 132, height: 132)
+                Circle()
+                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    .frame(width: 112, height: 112)
                 Image(systemName: badge.symbolName)
-                    .font(.system(size: 40))
+                    .font(.system(size: 44))
                     .foregroundStyle(Color(hex: badge.color))
             }
-            Text(badge.title)
-                .font(.headline)
+
+            VStack(spacing: 6) {
+                Text("Badge Earned")
+                    .font(.system(.caption, design: .rounded).weight(.semibold))
+                    .foregroundStyle(AppTheme.textMuted)
+                Text(badge.title)
+                    .font(.system(.title3, design: .rounded).weight(.bold))
+                    .foregroundStyle(AppTheme.textPrimary)
+            }
         }
+        .frame(maxWidth: .infinity)
+        .questCard()
         .accessibilityLabel("Badge earned: \(badge.title)")
     }
 }
-
-// MARK: - Performance Dashboard
 
 struct PerformanceDashboardView: View {
     let data: [PerformanceDataPoint]
     let averageScore: Int
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Your Performance")
-                .font(.headline)
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Performance Dashboard")
+                .font(.system(.headline, design: .rounded).weight(.semibold))
 
             ForEach(data) { point in
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Text("Stage \(point.stageNumber)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .font(.system(.caption, design: .rounded).weight(.semibold))
+                            .foregroundStyle(AppTheme.textMuted)
                         Spacer()
                         Text("\(point.playerScore) / \(point.optimalScore)")
-                            .font(.caption.monospacedDigit())
+                            .font(.system(.caption, design: .rounded).weight(.bold))
+                            .foregroundStyle(AppTheme.textPrimary)
                     }
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(Color(.systemGray5))
-                            .frame(height: 10)
-                        GeometryReader { geo in
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(scoreColor(point.playerScore))
-                                .frame(width: geo.size.width * CGFloat(point.playerScore) / 100,
-                                       height: 10)
+
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 999, style: .continuous)
+                                .fill(AppTheme.surface)
+                            RoundedRectangle(cornerRadius: 999, style: .continuous)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [scoreColor(point.playerScore), scoreColor(point.playerScore).opacity(0.6)],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .frame(width: geo.size.width * CGFloat(point.playerScore) / 100)
                         }
                     }
-                    .frame(height: 10)
+                    .frame(height: 12)
                 }
             }
 
-            HStack {
-                Text("Average Score")
-                    .font(.subheadline)
-                Spacer()
-                Text("\(averageScore)")
-                    .font(.subheadline.bold().monospacedDigit())
-            }
-            .padding(.top, 4)
+            QuestInfoBanner(
+                icon: "chart.bar.fill",
+                title: "Average Score",
+                message: "\(averageScore) across the completed phase.",
+                accent: averageScore >= 80 ? AppTheme.success : (averageScore >= 60 ? AppTheme.highlight : AppTheme.danger)
+            )
         }
-        .padding()
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+        .questCard()
     }
 
     private func scoreColor(_ score: Int) -> Color {
         switch score {
-        case 80...100: return .investGreen
-        case 50..<80:  return .orange
-        default:       return .investRed
+        case 80...100:
+            return .investGreen
+        case 50..<80:
+            return AppTheme.highlight
+        default:
+            return .investRed
         }
     }
 }
-
-// MARK: - Next Phase Teaser
 
 struct NextPhaseTeaserView: View {
     let config: PhaseConfig
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("Next Up: Phase \(config.id)", systemImage: "lock.open.fill")
-                .font(.caption)
-                .foregroundStyle(.blue)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                QuestChip(text: "Next Up · Phase \(config.id)", accent: AppTheme.accent)
+                Spacer(minLength: 0)
+                Image(systemName: "arrow.right.circle.fill")
+                    .foregroundStyle(AppTheme.accent)
+            }
+
             Text(config.title)
-                .font(.headline)
+                .font(.system(.headline, design: .rounded).weight(.semibold))
+                .foregroundStyle(AppTheme.textPrimary)
+
             Text(config.teaserDescription)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .font(.system(.subheadline, design: .rounded))
+                .foregroundStyle(AppTheme.textSecondary)
         }
-        .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.blue.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.blue.opacity(0.3), lineWidth: 1))
+        .questCard(fill: AppTheme.accentDeep.opacity(0.18))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Next phase unlocked: \(config.title). \(config.teaserDescription)")
-    }
-}
-
-// MARK: - Color hex extension
-
-extension Color {
-    init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
-        let r = Double((int >> 16) & 0xFF) / 255
-        let g = Double((int >> 8) & 0xFF) / 255
-        let b = Double(int & 0xFF) / 255
-        self.init(red: r, green: g, blue: b)
     }
 }

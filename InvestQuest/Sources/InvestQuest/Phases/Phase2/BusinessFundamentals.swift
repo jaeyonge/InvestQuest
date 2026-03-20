@@ -1,7 +1,7 @@
 import Foundation
 
 /// Simplified business fundamentals presented to the player in Phase 2.
-struct BusinessFundamentals: Identifiable {
+struct BusinessFundamentals: Identifiable, Codable, Equatable {
     let id: String
     let businessName: String
     let revenue: Double              // annual revenue in ₩
@@ -15,7 +15,7 @@ struct BusinessFundamentals: Identifiable {
         return max(0, profit) * 10
     }
 
-    enum FundamentalField: String, CaseIterable {
+    enum FundamentalField: String, CaseIterable, Codable {
         case revenue, costs, profit
     }
 
@@ -31,7 +31,7 @@ struct BusinessFundamentals: Identifiable {
 }
 
 /// Sentiment indicator for Stage 3+: market price distorted by hype or fear.
-enum SentimentIndicator: String {
+enum SentimentIndicator: String, Codable {
     case neutral = "Neutral"
     case hype = "🔥 Extreme Hype"
     case fear = "😨 Panic Selling"
@@ -51,7 +51,7 @@ enum SentimentIndicator: String {
 }
 
 /// A Phase 2 investment opportunity presented to the player.
-struct Phase2Opportunity: Identifiable {
+struct Phase2Opportunity: Identifiable, Codable, Equatable {
     let id: String
     let fundamentals: BusinessFundamentals
     let marketPrice: Double

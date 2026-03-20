@@ -1,132 +1,317 @@
 import Foundation
 import SwiftData
 
-/// Manages phase/stage unlock logic, auto-save, and returning-user detection.
-/// All mutation methods persist state to the provided GameProgress SwiftData model.
 @MainActor
 final class GameProgressService: ObservableObject {
-
-    // MARK: - Constants
 
     static let longAbsenceThresholdDays: Double = 7
     static let minimumScoreDefault: Int = 60
 
-    // MARK: - State
-
     @Published private(set) var progress: GameProgress
-    private(set) var stageResults: [StageResult] = []
+    private let modelContext: ModelContext
+    private let encoder = JSONEncoder()
+    private let decoder = JSONDecoder()
 
-    init(progress: GameProgress) {
+    init(modelContext: ModelContext, progress: GameProgress) {
+        self.modelContext = modelContext
         self.progress = progress
     }
 
-    // MARK: - Phase unlock queries
+    static func loadOrCreateProgress(modelContext: ModelContext) -> GameProgress {
+        let descriptor = FetchDescriptor<GameProgress>()
+        if let existingRecords = try? modelContext.fetch(descriptor), let primary = existingRecords.first {
+            for duplicate in existingRecords.dropFirst() {
+                modelContext.delete(duplicate)
+            }
+            if existingRecords.count > 1 {
+                _ = try? modelContext.save()
+            }
+            return primary
+        }
 
-    /// Returns true when the given phase is unlocked (available to play).
-    /// Phase 1 is always unlocked. Phase N requires Phase N-1 to be completed.
+        let progress = GameProgress()
+        modelContext.insert(progress)
+        _ = try? modelContext.save()
+        return progress
+    }
+
+    static func make(modelContext: ModelContext) -> GameProgressService {
+        GameProgressService(modelContext: modelContext, progress: loadOrCreateProgress(modelContext: modelContext))
+    }
+
     func isPhaseUnlocked(_ phaseId: Int) -> Bool {
         if phaseId == 1 { return true }
         return progress.completedPhases.contains(phaseId - 1)
     }
 
-    /// Returns true when all stages in phaseId have been completed.
     func isPhaseCompleted(_ phaseId: Int) -> Bool {
         progress.completedPhases.contains(phaseId)
     }
 
-    // MARK: - Stage unlock queries
-
-    /// Returns true when the given stage within a phase is unlocked.
-    /// Stage 1 is always unlocked if the phase is unlocked.
-    /// Stage N requires stage N-1 score ≥ minimumScoreToAdvance.
     func isStageUnlocked(phase: Int, stage: Int) -> Bool {
         guard isPhaseUnlocked(phase) else { return false }
         if stage == 1 { return true }
-        let minScore = PhaseConfig.all.first(where: { $0.id == phase })?.minimumScoreToAdvance
-            ?? Self.minimumScoreDefault
-        let previousResult = stageResults.first(where: { $0.phase == phase && $0.stage == stage - 1 })
-        return (previousResult?.score ?? 0) >= minScore
+        let previous = StageAddress(phase: phase, stage: stage - 1)
+        return completion(for: previous)?.isPassed == true
     }
 
-    // MARK: - Progress recording
+    func currentAddress() -> StageAddress {
+        let address = StageAddress(phase: progress.currentPhase, stage: progress.currentStage)
+        if StageCatalog.all.contains(where: { $0.address == address }) {
+            return address
+        }
+        return StageCatalog.introAddress
+    }
 
-    /// Called every time the player makes a decision or a simulation step completes.
-    /// Updates GameProgress (auto-save is triggered by SwiftData's @Model).
-    func recordDecision(phase: Int, stage: Int,
-                        decisionType: String, value: Double, optimalValue: Double,
-                        modelContext: ModelContext) {
-        progress.currentPhase = phase
-        progress.currentStage = stage
+    func entryAddress() -> StageAddress {
+        let address = currentAddress()
+        if isStageUnlocked(phase: address.phase, stage: address.stage) {
+            return address
+        }
+        return firstUnlockedStage(inPhase: progress.currentPhase) ?? StageCatalog.introAddress
+    }
+
+    func addressForPhaseSelection(_ phase: Int) -> StageAddress {
+        firstUnlockedStage(inPhase: phase) ?? StageCatalog.definitions(forPhase: phase).first?.address ?? StageCatalog.introAddress
+    }
+
+    func firstUnlockedStage(inPhase phase: Int) -> StageAddress? {
+        StageCatalog.definitions(forPhase: phase)
+            .map(\.address)
+            .first(where: { isStageUnlocked(phase: $0.phase, stage: $0.stage) })
+    }
+
+    func completion(for address: StageAddress) -> StageCompletionRecord? {
+        var descriptor = FetchDescriptor<StageCompletionRecord>(
+            predicate: #Predicate { $0.phase == address.phase && $0.stage == address.stage }
+        )
+        descriptor.fetchLimit = 1
+        return try? modelContext.fetch(descriptor).first
+    }
+
+    func completionRecords(forPhase phase: Int) -> [StageCompletionRecord] {
+        let descriptor = FetchDescriptor<StageCompletionRecord>(
+            predicate: #Predicate { $0.phase == phase },
+            sortBy: [SortDescriptor(\.stage, order: .forward)]
+        )
+        return (try? modelContext.fetch(descriptor)) ?? []
+    }
+
+    func stageResults(forPhase phase: Int) -> [StageResult] {
+        completionRecords(forPhase: phase).map {
+            StageResult(phase: $0.phase, stage: $0.stage, score: $0.latestScore, completedAt: $0.completedAt)
+        }
+    }
+
+    func recordDecision(
+        address: StageAddress,
+        decisionType: String,
+        decision: PlayerDecision,
+        optimalDecision: PlayerDecision,
+        outcome: StageOutcome?,
+        decisionLatencyMs: Int,
+        biasTags: [String] = []
+    ) {
+        progress.currentPhase = address.phase
+        progress.currentStage = address.stage
         progress.lastPlayedDate = .now
 
         let record = DecisionRecord(
-            phase: phase,
-            stage: stage,
+            phase: address.phase,
+            stage: address.stage,
             decisionType: decisionType,
-            value: value,
-            optimalValue: optimalValue
+            playerDecisionJSON: encode(decision),
+            optimalDecisionJSON: encode(optimalDecision),
+            score: outcome?.score ?? 0,
+            decisionLatencyMs: decisionLatencyMs,
+            outcomeJSON: outcome.map(encode) ?? "{}",
+            biasTags: biasTags
         )
         modelContext.insert(record)
         try? modelContext.save()
     }
 
-    /// Called when a stage is completed with a final score.
-    func completeStage(phase: Int, stage: Int, score: Int, modelContext: ModelContext) {
-        let result = StageResult(phase: phase, stage: stage, score: score, completedAt: .now)
-        // Replace existing result if re-played
-        stageResults.removeAll { $0.phase == phase && $0.stage == stage }
-        stageResults.append(result)
+    func completeStage(address: StageAddress, outcome: StageOutcome) {
+        let passingScore = StageCatalog.definition(for: address).minimumPassingScore
+        let passed = outcome.score >= passingScore
 
-        let config = PhaseConfig.all.first(where: { $0.id == phase })
-        let isLastStage = (stage == (config?.stageCount ?? 0))
-
-        if isLastStage {
-            completePhase(phaseId: phase, modelContext: modelContext)
+        if let existing = completion(for: address) {
+            existing.latestScore = outcome.score
+            existing.latestStars = outcome.starRating
+            existing.bestScore = max(existing.bestScore, outcome.score)
+            existing.bestStars = max(existing.bestStars, outcome.starRating)
+            existing.isPassed = existing.isPassed || passed
+            existing.completedAt = .now
+        } else {
+            let record = StageCompletionRecord(
+                phase: address.phase,
+                stage: address.stage,
+                latestScore: outcome.score,
+                bestScore: outcome.score,
+                latestStars: outcome.starRating,
+                bestStars: outcome.starRating,
+                isPassed: passed
+            )
+            modelContext.insert(record)
         }
 
+        progress.lastPlayedDate = .now
+        if passed {
+            updateProgressAfterPassing(address: address)
+        } else {
+            progress.currentPhase = address.phase
+            progress.currentStage = address.stage
+        }
+
+        clearSession(for: address)
+        try? modelContext.save()
+    }
+
+    func saveSession(_ snapshot: StageSessionSnapshot) {
+        let json = snapshot.pendingDecision.map(encode)
+        progress.currentPhase = snapshot.address.phase
+        progress.currentStage = snapshot.address.stage
+        if let existing = loadStageSessionRecord(for: snapshot.address) {
+            existing.flowState = snapshot.flowState.rawValue
+            existing.currentPeriod = snapshot.currentPeriod
+            existing.failureCount = snapshot.failureCount
+            existing.pendingDecisionJSON = json
+            existing.timeRemaining = snapshot.timeRemaining
+            existing.savedAt = .now
+        } else {
+            let record = StageSessionRecord(
+                phase: snapshot.address.phase,
+                stage: snapshot.address.stage,
+                flowState: snapshot.flowState.rawValue,
+                currentPeriod: snapshot.currentPeriod,
+                failureCount: snapshot.failureCount,
+                pendingDecisionJSON: json,
+                timeRemaining: snapshot.timeRemaining
+            )
+            modelContext.insert(record)
+        }
         progress.lastPlayedDate = .now
         try? modelContext.save()
     }
 
-    // MARK: - Returning user
-
-    /// True when the user has been absent for ≥ longAbsenceThresholdDays.
-    var isReturningAfterLongAbsence: Bool {
-        let daysSinceLastPlay = Date().timeIntervalSince(progress.lastPlayedDate) / 86400
-        return daysSinceLastPlay >= Self.longAbsenceThresholdDays
-            && !progress.completedPhases.isEmpty
+    func clearSession(for address: StageAddress) {
+        if let existing = loadStageSessionRecord(for: address) {
+            modelContext.delete(existing)
+            try? modelContext.save()
+        }
     }
 
-    /// The phase/concept to recap for a returning user (last completed phase).
+    func loadStageSession() -> StageSessionSnapshot? {
+        let descriptor = FetchDescriptor<StageSessionRecord>(
+            sortBy: [SortDescriptor(\.savedAt, order: .reverse)]
+        )
+        let records = (try? modelContext.fetch(descriptor)) ?? []
+        for record in records {
+            if let snapshot = validatedSessionSnapshot(from: record) {
+                return snapshot
+            }
+        }
+        return nil
+    }
+
+    var isReturningAfterLongAbsence: Bool {
+        let daysSinceLastPlay = Date().timeIntervalSince(progress.lastPlayedDate) / 86400
+        return daysSinceLastPlay >= Self.longAbsenceThresholdDays && !progress.completedPhases.isEmpty
+    }
+
     var recapPhase: PhaseConfig? {
         guard isReturningAfterLongAbsence else { return nil }
         let lastCompleted = progress.completedPhases.max()
         return PhaseConfig.all.first(where: { $0.id == lastCompleted })
     }
 
-    // MARK: - Hard mode
+    var recapAddress: StageAddress? {
+        guard let phase = recapPhase?.id else { return nil }
+        return StageCatalog.lastAddress(inPhase: phase)
+    }
 
-    /// Returns true when all stages in a phase have been completed with a 3-star score (score ≥ 80).
-    /// When true, the UI should offer a "hard mode" replay with tighter margins and less information.
     func isHardModeAvailable(forPhase phaseId: Int) -> Bool {
-        guard let config = PhaseConfig.all.first(where: { $0.id == phaseId }) else { return false }
-        return (1...config.stageCount).allSatisfy { stage in
-            let result = stageResults.first(where: { $0.phase == phaseId && $0.stage == stage })
-            return (result?.score ?? 0) >= 80  // 80+ = 3-star
-        }
+        let completions = completionRecords(forPhase: phaseId)
+        let expectedCount = StageCatalog.stageCount(forPhase: phaseId)
+        guard completions.count == expectedCount else { return false }
+        return completions.allSatisfy { $0.bestScore >= 80 }
     }
 
     // MARK: - Private
 
-    private func completePhase(phaseId: Int, modelContext: ModelContext) {
-        if !progress.completedPhases.contains(phaseId) {
-            progress.completedPhases.append(phaseId)
+    private func updateProgressAfterPassing(address: StageAddress) {
+        let phaseStages = StageCatalog.definitions(forPhase: address.phase)
+        let isLastStage = phaseStages.last?.address == address
+        if isLastStage {
+            if !progress.completedPhases.contains(address.phase) {
+                progress.completedPhases.append(address.phase)
+            }
+            if let next = StageCatalog.next(after: address) {
+                progress.currentPhase = next.phase
+                progress.currentStage = next.stage
+            }
+        } else if let next = StageCatalog.next(after: address) {
+            progress.currentPhase = next.phase
+            progress.currentStage = next.stage
         }
-        // Advance to first stage of next phase if available
-        if phaseId < 7 {
-            progress.currentPhase = phaseId + 1
-            progress.currentStage = 1
+    }
+
+    private func loadStageSessionRecord(for address: StageAddress) -> StageSessionRecord? {
+        var descriptor = FetchDescriptor<StageSessionRecord>(
+            predicate: #Predicate { $0.phase == address.phase && $0.stage == address.stage }
+        )
+        descriptor.fetchLimit = 1
+        return try? modelContext.fetch(descriptor).first
+    }
+
+    private func validatedSessionSnapshot(from record: StageSessionRecord) -> StageSessionSnapshot? {
+        let address = StageAddress(phase: record.phase, stage: record.stage)
+        guard let flowState = StageFlowSnapshotState(rawValue: record.flowState),
+              catalogIndex(for: address) != nil,
+              isStageUnlocked(phase: address.phase, stage: address.stage) else {
+            discardSessionRecord(record)
+            return nil
         }
+
+        if completion(for: address)?.isPassed == true || isSessionBehindProgress(address) {
+            discardSessionRecord(record)
+            return nil
+        }
+
+        return StageSessionSnapshot(
+            address: address,
+            flowState: flowState,
+            currentPeriod: record.currentPeriod,
+            failureCount: record.failureCount,
+            pendingDecision: record.pendingDecisionJSON.flatMap(decodePlayerDecision),
+            timeRemaining: record.timeRemaining
+        )
+    }
+
+    private func isSessionBehindProgress(_ address: StageAddress) -> Bool {
+        guard let sessionIndex = catalogIndex(for: address),
+              let progressIndex = catalogIndex(for: currentAddress()) else {
+            return false
+        }
+        return sessionIndex < progressIndex
+    }
+
+    private func catalogIndex(for address: StageAddress) -> Int? {
+        StageCatalog.all.firstIndex(where: { $0.address == address })
+    }
+
+    private func discardSessionRecord(_ record: StageSessionRecord) {
+        modelContext.delete(record)
         try? modelContext.save()
+    }
+
+    private func encode<T: Encodable>(_ value: T) -> String {
+        let data = (try? encoder.encode(value)) ?? Data()
+        return String(data: data, encoding: .utf8) ?? "{}"
+    }
+
+    private func decodePlayerDecision(_ json: String) -> PlayerDecision? {
+        guard let data = json.data(using: .utf8) else { return nil }
+        return try? decoder.decode(PlayerDecision.self, from: data)
     }
 }

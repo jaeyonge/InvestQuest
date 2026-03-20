@@ -7,25 +7,31 @@ final class PhaseCompletionTests: XCTestCase {
 
     // MARK: - Helpers
 
-    private func makeResults(phase: Int, count: Int, score: Int = 75) -> [StageResult] {
-        (1...count).map {
-            StageResult(phase: phase, stage: $0, score: score, completedAt: .now)
+    private func seedStageCompletions(
+        phase: Int,
+        scores: [Int],
+        context: ModelContext
+    ) throws {
+        for (index, score) in scores.enumerated() {
+            context.insert(
+                StageCompletionRecord(
+                    phase: phase,
+                    stage: index + 1,
+                    latestScore: score,
+                    bestScore: score,
+                    latestStars: StageOutcome.starRating(for: score),
+                    bestStars: StageOutcome.starRating(for: score),
+                    isPassed: score >= 60
+                )
+            )
         }
-    }
-
-    private func makeInMemoryContext() throws -> ModelContext {
-        let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        let container = try ModelContainer(
-            for: GameProgress.self, DecisionRecord.self, PhaseCompletionRecord.self,
-            configurations: config
-        )
-        return ModelContext(container)
+        try context.save()
     }
 
     // MARK: - AC1: Concept named in plain language
 
     func testConceptName_isPlainLanguage() {
-        let vm = PhaseCompletionViewModel(phaseId: 1, stageResults: makeResults(phase: 1, count: 5))
+        let vm = PhaseCompletionViewModel(phaseId: 1)
         XCTAssertEqual(vm.completedPhaseConfig.concept, "Inflation",
                        "Phase 1 concept must be 'Inflation'")
         XCTAssertFalse(vm.completedPhaseConfig.concept.isEmpty)
@@ -33,9 +39,7 @@ final class PhaseCompletionTests: XCTestCase {
 
     func testConceptName_allPhasesHaveConcept() {
         for phaseId in 1...7 {
-            let vm = PhaseCompletionViewModel(
-                phaseId: phaseId,
-                stageResults: makeResults(phase: phaseId, count: 4))
+            let vm = PhaseCompletionViewModel(phaseId: phaseId)
             XCTAssertFalse(vm.completedPhaseConfig.concept.isEmpty,
                            "Phase \(phaseId) must have a non-empty concept name")
         }
@@ -44,15 +48,21 @@ final class PhaseCompletionTests: XCTestCase {
     // MARK: - AC2: Performance dashboard
 
     func testPerformanceDashboard_hasDataPointsPerStage() {
-        let results = makeResults(phase: 1, count: 5, score: 80)
-        let vm = PhaseCompletionViewModel(phaseId: 1, stageResults: results)
+        let container = try! TestDataFactory.makeContainer()
+        let context = ModelContext(container)
+        try! seedStageCompletions(phase: 1, scores: [80, 80, 80, 80, 80], context: context)
+        let vm = PhaseCompletionViewModel(phaseId: 1)
+        vm.loadPerformance(modelContext: context)
         XCTAssertEqual(vm.performanceData.count, 5,
                        "Performance dashboard must have one data point per stage")
     }
 
     func testPerformanceDashboard_optimalIsAlways100() {
-        let results = makeResults(phase: 1, count: 5, score: 60)
-        let vm = PhaseCompletionViewModel(phaseId: 1, stageResults: results)
+        let container = try! TestDataFactory.makeContainer()
+        let context = ModelContext(container)
+        try! seedStageCompletions(phase: 1, scores: [60, 60, 60, 60, 60], context: context)
+        let vm = PhaseCompletionViewModel(phaseId: 1)
+        vm.loadPerformance(modelContext: context)
         for point in vm.performanceData {
             XCTAssertEqual(point.optimalScore, 100,
                            "Optimal score must always be 100")
@@ -60,27 +70,29 @@ final class PhaseCompletionTests: XCTestCase {
     }
 
     func testPerformanceDashboard_playerScoreReflectsResults() {
-        let results = makeResults(phase: 1, count: 3, score: 72)
-        let vm = PhaseCompletionViewModel(phaseId: 1, stageResults: results)
+        let container = try! TestDataFactory.makeContainer()
+        let context = ModelContext(container)
+        try! seedStageCompletions(phase: 1, scores: [72, 72, 72], context: context)
+        let vm = PhaseCompletionViewModel(phaseId: 1)
+        vm.loadPerformance(modelContext: context)
         for point in vm.performanceData {
             XCTAssertEqual(point.playerScore, 72)
         }
     }
 
     func testAverageScore_calculatedCorrectly() {
-        let results = [
-            StageResult(phase: 1, stage: 1, score: 60, completedAt: .now),
-            StageResult(phase: 1, stage: 2, score: 80, completedAt: .now),
-            StageResult(phase: 1, stage: 3, score: 100, completedAt: .now)
-        ]
-        let vm = PhaseCompletionViewModel(phaseId: 1, stageResults: results)
+        let container = try! TestDataFactory.makeContainer()
+        let context = ModelContext(container)
+        try! seedStageCompletions(phase: 1, scores: [60, 80, 100], context: context)
+        let vm = PhaseCompletionViewModel(phaseId: 1)
+        vm.loadPerformance(modelContext: context)
         XCTAssertEqual(vm.averageScore, 80, "Average of 60+80+100 = 80")
     }
 
     // MARK: - AC3: Badge awarded and persisted
 
     func testBadge_awardedOnPhaseCompletion() {
-        let vm = PhaseCompletionViewModel(phaseId: 1, stageResults: makeResults(phase: 1, count: 5))
+        let vm = PhaseCompletionViewModel(phaseId: 1)
         XCTAssertNotNil(vm.badge, "Badge must be awarded on phase completion")
         XCTAssertEqual(vm.badge?.phaseId, 1)
     }
@@ -94,8 +106,10 @@ final class PhaseCompletionTests: XCTestCase {
     }
 
     func testBadge_persistedToSwiftData() throws {
-        let context = try makeInMemoryContext()
-        let vm = PhaseCompletionViewModel(phaseId: 1, stageResults: makeResults(phase: 1, count: 5))
+        let (_, context, _) = try TestDataFactory.makeService()
+        try seedStageCompletions(phase: 1, scores: [70, 80, 90, 85, 75], context: context)
+        let vm = PhaseCompletionViewModel(phaseId: 1)
+        vm.loadPerformance(modelContext: context)
         vm.persistCompletion(modelContext: context)
 
         let descriptor = FetchDescriptor<PhaseCompletionRecord>()
@@ -109,26 +123,25 @@ final class PhaseCompletionTests: XCTestCase {
     // MARK: - AC4: Next phase unlocked with teaser
 
     func testNextPhase_teaserAvailableAfterPhase1() {
-        let vm = PhaseCompletionViewModel(phaseId: 1, stageResults: makeResults(phase: 1, count: 5))
+        let vm = PhaseCompletionViewModel(phaseId: 1)
         XCTAssertNotNil(vm.nextPhaseConfig, "Next phase config must be available after Phase 1")
         XCTAssertEqual(vm.nextPhaseConfig?.id, 2)
         XCTAssertFalse(vm.nextPhaseConfig?.teaserDescription.isEmpty ?? true)
     }
 
     func testNextPhase_noTeaserAfterPhase7() {
-        let vm = PhaseCompletionViewModel(phaseId: 7, stageResults: makeResults(phase: 7, count: 4))
+        let vm = PhaseCompletionViewModel(phaseId: 7)
         XCTAssertNil(vm.nextPhaseConfig, "No next phase after Phase 7")
     }
 
     func testNextPhase_progressServiceUnlocksNextPhase() throws {
-        let context = try makeInMemoryContext()
-        let progress = GameProgress()
-        context.insert(progress)
-        let service = GameProgressService(progress: progress)
+        let (_, _, service) = try TestDataFactory.makeService()
 
-        // Complete all 5 stages of phase 1
-        for stage in 1...5 {
-            service.completeStage(phase: 1, stage: stage, score: 80, modelContext: context)
+        for stage in 1...StageCatalog.stageCount(forPhase: 1) {
+            service.completeStage(
+                address: StageAddress(phase: 1, stage: stage),
+                outcome: TestDataFactory.makeOutcome(score: 80)
+            )
         }
         XCTAssertTrue(service.isPhaseUnlocked(2),
                       "Phase 2 must be unlocked after completing all Phase 1 stages")
@@ -137,15 +150,12 @@ final class PhaseCompletionTests: XCTestCase {
     // MARK: - AC5: Phase completion data persisted for Phase 7 retrieval
 
     func testPersistence_completionDataRetrievableAfterSave() throws {
-        let context = try makeInMemoryContext()
-        let results = [
-            StageResult(phase: 2, stage: 1, score: 90, completedAt: .now),
-            StageResult(phase: 2, stage: 2, score: 85, completedAt: .now)
-        ]
-        let vm = PhaseCompletionViewModel(phaseId: 2, stageResults: results)
+        let (_, context, _) = try TestDataFactory.makeService()
+        try seedStageCompletions(phase: 2, scores: [90, 85], context: context)
+        let vm = PhaseCompletionViewModel(phaseId: 2)
+        vm.loadPerformance(modelContext: context)
         vm.persistCompletion(modelContext: context)
 
-        // Verify retrievable
         let descriptor = FetchDescriptor<PhaseCompletionRecord>()
         let records = try context.fetch(descriptor)
         XCTAssertEqual(records[0].phaseId, 2)
@@ -155,9 +165,10 @@ final class PhaseCompletionTests: XCTestCase {
     }
 
     func testPersistence_decisionSummaryContainsStageData() throws {
-        let context = try makeInMemoryContext()
-        let results = makeResults(phase: 3, count: 4, score: 65)
-        let vm = PhaseCompletionViewModel(phaseId: 3, stageResults: results)
+        let (_, context, _) = try TestDataFactory.makeService()
+        try seedStageCompletions(phase: 3, scores: [65, 65, 65, 65], context: context)
+        let vm = PhaseCompletionViewModel(phaseId: 3)
+        vm.loadPerformance(modelContext: context)
         vm.persistCompletion(modelContext: context)
 
         let descriptor = FetchDescriptor<PhaseCompletionRecord>()

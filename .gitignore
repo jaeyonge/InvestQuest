@@ -1,0 +1,42 @@
+# macOS
+.DS_Store
+
+# Xcode user data
+**/*.xcuserstate
+**/*.xcuserdata/
+**/*.xccheckout
+**/*.moved-aside
+
+# Build products
+DerivedData/
+build/
+TestResults/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Packages/
+Package.resolved
+
+# Dependency managers
+Pods/
+Carthage/Build/
+
+# Fastlane temporary output
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output/
+
+# Editor/tooling
+.vscode/
+.idea/
+
+# Local orchestration/runtime state
+.omc/
+**/.omc/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp

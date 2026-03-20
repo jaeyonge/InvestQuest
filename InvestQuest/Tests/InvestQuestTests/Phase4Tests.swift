@@ -9,7 +9,7 @@ final class Phase4Tests: XCTestCase {
 
     func testStage1_binaryDecision_reinvestVsWithdraw() {
         let stage = Phase4StageDefinitions.stage1
-        guard case .binary(let a, let b) = stage.decisionType else {
+        guard let (a, b) = TestDataFactory.binaryOptions(from: stage) else {
             XCTFail("Stage 1 must use binary decision type"); return
         }
         XCTAssertTrue(a.lowercased().contains("withdraw"),
@@ -50,7 +50,7 @@ final class Phase4Tests: XCTestCase {
 
     func testStage2_binaryDecision_startNowVsWait() {
         let stage = Phase4StageDefinitions.stage2
-        guard case .binary(let a, let b) = stage.decisionType else {
+        guard let (a, b) = TestDataFactory.binaryOptions(from: stage) else {
             XCTFail("Stage 2 must use binary decision type"); return
         }
         XCTAssertTrue(a.lowercased().contains("start") || a.lowercased().contains("now"),
@@ -91,7 +91,7 @@ final class Phase4Tests: XCTestCase {
 
     func testStage3_binaryDecision_lowVsHighFee() {
         let stage = Phase4StageDefinitions.stage3
-        guard case .binary(let a, let b) = stage.decisionType else {
+        guard let (a, b) = TestDataFactory.binaryOptions(from: stage) else {
             XCTFail("Stage 3 must use binary decision type"); return
         }
         XCTAssertTrue(a.lowercased().contains("low") || a.lowercased().contains("0.5"),
@@ -133,7 +133,7 @@ final class Phase4Tests: XCTestCase {
 
     func testStage4_binaryDecision_withdrawVsHold() {
         let stage = Phase4StageDefinitions.stage4
-        guard case .binary(let a, let b) = stage.decisionType else {
+        guard let (a, b) = TestDataFactory.binaryOptions(from: stage) else {
             XCTFail("Stage 4 must use binary decision type"); return
         }
         XCTAssertTrue(a.lowercased().contains("withdraw"),

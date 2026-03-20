@@ -15,26 +15,26 @@ final class PhaseCompletionViewModel: ObservableObject {
 
     // MARK: - Init
 
-    init(phaseId: Int, stageResults: [StageResult]) {
+    init(phaseId: Int) {
         guard let config = PhaseConfig.all.first(where: { $0.id == phaseId }) else {
             fatalError("Invalid phaseId: \(phaseId)")
         }
         self.completedPhaseConfig = config
         self.nextPhaseConfig = PhaseConfig.all.first(where: { $0.id == phaseId + 1 })
         self.badge = Badge.all.first(where: { $0.phaseId == phaseId })
+    }
 
-        // Build performance data: player score per stage vs optimal (100)
-        let phaseResults = stageResults.filter { $0.phase == phaseId }
-            .sorted { $0.stage < $1.stage }
-        self.performanceData = phaseResults.map { result in
-            PerformanceDataPoint(
-                stageNumber: result.stage,
-                playerScore: result.score,
-                optimalScore: 100
-            )
+    func loadPerformance(modelContext: ModelContext) {
+        let phaseID = completedPhaseConfig.id
+        let descriptor = FetchDescriptor<StageCompletionRecord>(
+            predicate: #Predicate { $0.phase == phaseID },
+            sortBy: [SortDescriptor(\.stage, order: .forward)]
+        )
+        let records = (try? modelContext.fetch(descriptor)) ?? []
+        performanceData = records.map {
+            PerformanceDataPoint(stageNumber: $0.stage, playerScore: $0.latestScore, optimalScore: 100)
         }
-        self.averageScore = phaseResults.isEmpty ? 0 :
-            phaseResults.map(\.score).reduce(0, +) / phaseResults.count
+        averageScore = records.isEmpty ? 0 : records.map(\.latestScore).reduce(0, +) / records.count
     }
 
     // MARK: - Persist
@@ -42,6 +42,14 @@ final class PhaseCompletionViewModel: ObservableObject {
     /// Saves the phase completion record to SwiftData for Phase 7 retrieval.
     func persistCompletion(modelContext: ModelContext) {
         guard let badge = badge else { return }
+        let phaseID = completedPhaseConfig.id
+        let descriptor = FetchDescriptor<PhaseCompletionRecord>(
+            predicate: #Predicate { $0.phaseId == phaseID }
+        )
+        if (try? modelContext.fetch(descriptor).isEmpty) == false {
+            isPersisted = true
+            return
+        }
 
         // Encode decision summary as simple JSON
         let summaryDict = performanceData.reduce(into: [String: Int]()) { dict, point in

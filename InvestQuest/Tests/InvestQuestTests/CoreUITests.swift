@@ -74,10 +74,7 @@ final class CoreUITests: XCTestCase {
     func testPhase1_usesSimpleBinaryDecisions() {
         // Phase 1 stages use binary, allocation, or timed-binary (no multi-asset ranking)
         let phase1SimpleCount = Phase1StageDefinitions.all.filter {
-            switch $0.decisionType {
-            case .binary, .allocationSlider, .timed: return true
-            case .multiAssetRanking: return false
-            }
+            TestDataFactory.binaryOptions(from: $0) != nil || TestDataFactory.allocationOptions(from: $0) != nil
         }.count
         XCTAssertEqual(phase1SimpleCount, Phase1StageDefinitions.all.count,
                        "All Phase 1 stages must use binary, allocation, or timed — no complex ranking")
@@ -87,8 +84,8 @@ final class CoreUITests: XCTestCase {
         // Phases 2-6 introduce more complex decision types
         let allStages = (Phase2StageDefinitions.all + Phase3StageDefinitions.all +
                          Phase5StageDefinitions.all + Phase6StageDefinitions.all)
-        let hasAllocation = allStages.contains { if case .allocationSlider = $0.decisionType { return true }; return false }
-        let hasRanking = allStages.contains { if case .multiAssetRanking = $0.decisionType { return true }; return false }
+        let hasAllocation = allStages.contains { TestDataFactory.allocationOptions(from: $0) != nil }
+        let hasRanking = allStages.contains { TestDataFactory.rankingAssets(from: $0) != nil }
         XCTAssertTrue(hasAllocation, "Later phases must introduce allocation slider decisions")
         XCTAssertTrue(hasRanking, "Later phases must introduce ranking decisions")
     }

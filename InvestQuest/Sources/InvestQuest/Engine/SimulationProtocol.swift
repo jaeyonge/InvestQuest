@@ -1,55 +1,160 @@
 import Foundation
 
-// MARK: - Stage Configuration
+enum LessonRole: String, Codable, Equatable {
+    case preferred
+    case neutral
+    case penalized
+}
 
-/// Parameters for configuring a single stage's simulation.
+enum SimAssetKind: String, Codable, Equatable {
+    case cash
+    case savings
+    case bond
+    case equity
+    case business
+    case fund
+    case diversified
+    case sector
+    case behavioral
+    case generic
+}
+
+struct SimAssetConfig: Codable, Equatable, Identifiable {
+    let id: String
+    let label: String
+    let startingValue: Double
+    let drift: Double
+    let volatility: Double
+    let annualFee: Double
+    let correlationGroup: String?
+    let correlationStrength: Double
+    let lessonRole: LessonRole
+    let kind: SimAssetKind
+
+    init(
+        id: String,
+        label: String,
+        startingValue: Double = 100.0,
+        drift: Double,
+        volatility: Double,
+        annualFee: Double = 0,
+        correlationGroup: String? = nil,
+        correlationStrength: Double = 0,
+        lessonRole: LessonRole = .neutral,
+        kind: SimAssetKind = .generic
+    ) {
+        self.id = id
+        self.label = label
+        self.startingValue = startingValue
+        self.drift = drift
+        self.volatility = volatility
+        self.annualFee = annualFee
+        self.correlationGroup = correlationGroup
+        self.correlationStrength = correlationStrength
+        self.lessonRole = lessonRole
+        self.kind = kind
+    }
+}
+
+enum SimulationEventKind: Codable, Equatable {
+    case multiplier(Double)
+    case driftShift(Double)
+    case volatilityShift(Double)
+    case feeDrag(Double)
+    case bankruptcy(Double)
+    case stopLossFloor(Double)
+}
+
+struct SimulationEvent: Codable, Equatable, Identifiable {
+    let id: String
+    let period: Int
+    let assetIDs: [String]?
+    let kind: SimulationEventKind
+    let narrative: String?
+
+    init(
+        id: String = UUID().uuidString,
+        period: Int,
+        assetIDs: [String]? = nil,
+        kind: SimulationEventKind,
+        narrative: String? = nil
+    ) {
+        self.id = id
+        self.period = period
+        self.assetIDs = assetIDs
+        self.kind = kind
+        self.narrative = narrative
+    }
+}
+
+struct StageSimulation: Codable, Equatable {
+    let seed: UInt64
+    let assets: [SimAssetConfig]
+    let periodCount: Int
+    let replayCount: Int
+    let events: [SimulationEvent]
+    let lessonBias: Double
+}
+
+// MARK: - Legacy Stage Configuration
+
+/// Legacy configuration retained so the existing phase definitions can be
+/// upgraded progressively while the runtime uses `StageSimulation`.
 struct StageConfig {
     let seed: UInt64
     let assetCount: Int
     let timePeriods: Int
-    let volatility: Double        // 0.0 – 1.0; controls per-step price swing magnitude
-    let drift: Double             // annual drift rate (e.g. 0.07 = 7% per year)
+    let volatility: Double
+    let drift: Double
     let eventInjections: [EventInjection]
     let outcomeWeight: OutcomeWeight
 
     struct EventInjection {
-        let period: Int           // which time period to inject at (0-based)
-        let assetIndex: Int       // which asset is affected (-1 = all)
-        let magnitudeFactor: Double  // multiplier applied to price (e.g. 0.5 = -50% crash)
+        let period: Int
+        let assetIndex: Int
+        let magnitudeFactor: Double
     }
 
     struct OutcomeWeight {
-        /// When correctStrategyWeight > 0.5, the correct strategy wins on average.
-        let correctStrategyWeight: Double   // 0.0 – 1.0
-        let description: String            // which strategy is "correct"
+        let correctStrategyWeight: Double
+        let description: String
     }
 }
 
 // MARK: - Simulation Result
 
-/// A single asset's complete price history for one simulation run.
-struct AssetPriceHistory {
+struct AssetPriceHistory: Codable, Equatable, Identifiable {
     let assetIndex: Int
-    let prices: [Double]   // length == StageConfig.timePeriods + 1 (includes t=0)
+    let assetID: String
+    let prices: [Double]
+
+    var id: String { assetID }
 }
 
-/// The full output of one simulation run.
-struct SimulationResult {
+struct SimulationRun: Codable, Equatable, Identifiable {
     let seed: UInt64
     let assetHistories: [AssetPriceHistory]
+
+    var id: UInt64 { seed }
+}
+
+struct SimulationResult: Codable, Equatable {
+    let runs: [SimulationRun]
     let durationSeconds: Double
+
+    var seed: UInt64 {
+        runs.first?.seed ?? 0
+    }
+
+    var assetHistories: [AssetPriceHistory] {
+        runs.first?.assetHistories ?? []
+    }
 }
 
 // MARK: - Protocol
 
-/// The interface all phase ViewModels use to run market simulations.
 protocol MarketSimulationEngineProtocol {
-    /// Runs the simulation for a given stage config and returns price histories.
-    /// Must be deterministic: same seed → same output.
-    /// Must complete in < 1 second.
+    func simulate(stage: StageSimulation) -> SimulationResult
     func simulate(config: StageConfig) -> SimulationResult
-
-    /// Runs N simulations with sequential seeds (seed, seed+1 … seed+count-1).
-    /// Used for outcome weighting validation.
     func simulateBatch(config: StageConfig, count: Int) -> [SimulationResult]
 }

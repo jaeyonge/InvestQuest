@@ -1,5 +1,4 @@
 import Foundation
-import SwiftData
 
 /// Controls top-level app routing: intro vs main game.
 @MainActor
@@ -7,36 +6,75 @@ final class AppViewModel: ObservableObject {
 
     enum AppRoute: Equatable {
         case intro
+        case recap(StageAddress)
+        case stage(StageAddress)
         case phaseMap
+        case phaseSummary(Int)
     }
 
     @Published private(set) var currentRoute: AppRoute = .intro
+    private var bootstrapped = false
 
-    private var progress: GameProgress?
+    func bootstrap(using service: GameProgressService, force: Bool = false) {
+        guard force || !bootstrapped else { return }
+        bootstrapped = true
 
-    init(progress: GameProgress?) {
-        self.progress = progress
-        // If user has already seen intro, go straight to game
-        if progress?.hasSeenIntro == true {
-            currentRoute = .phaseMap
+        if service.progress.hasSeenIntro == false {
+            currentRoute = .intro
+            return
         }
+
+        if let session = service.loadStageSession() {
+            currentRoute = .stage(session.address)
+            return
+        }
+
+        if let recapAddress = service.recapAddress, service.isReturningAfterLongAbsence {
+            currentRoute = .recap(recapAddress)
+            return
+        }
+
+        currentRoute = .stage(service.entryAddress())
     }
 
-    func completeIntro(modelContext: ModelContext) {
-        if let progress = progress {
-            progress.hasSeenIntro = true
-            try? modelContext.save()
-        } else {
-            let newProgress = GameProgress(hasSeenIntro: true)
-            modelContext.insert(newProgress)
-            try? modelContext.save()
-            self.progress = newProgress
-        }
+    func completeIntro(using service: GameProgressService) {
+        service.progress.hasSeenIntro = true
+        currentRoute = .stage(service.entryAddress())
+    }
+
+    func openPhaseMap() {
         currentRoute = .phaseMap
     }
 
-    /// True when this is the user's very first launch (no progress record at all).
-    var isFirstLaunch: Bool {
-        progress == nil || progress?.hasSeenIntro == false
+    func openStage(_ address: StageAddress) {
+        currentRoute = .stage(address)
+    }
+
+    func openPhaseSummary(_ phase: Int) {
+        currentRoute = .phaseSummary(phase)
+    }
+
+    func dismissRecap(into address: StageAddress) {
+        currentRoute = .stage(address)
+    }
+
+    func finishStage(address: StageAddress, outcome: StageOutcome, using service: GameProgressService) {
+        let definition = StageCatalog.definition(for: address)
+        if outcome.score >= definition.minimumPassingScore,
+           StageCatalog.lastAddress(inPhase: address.phase) == address {
+            currentRoute = .phaseSummary(address.phase)
+            return
+        }
+
+        if outcome.score >= definition.minimumPassingScore, let next = StageCatalog.next(after: address) {
+            currentRoute = .stage(next)
+            return
+        }
+
+        currentRoute = .stage(address)
+    }
+
+    func closePhaseSummary(using service: GameProgressService) {
+        currentRoute = .stage(service.entryAddress())
     }
 }

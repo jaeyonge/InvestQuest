@@ -5,32 +5,48 @@ struct InsightCardView: View {
     let onDismiss: () -> Void
 
     var body: some View {
-        VStack(spacing: 24) {
-            Image(systemName: "lightbulb.fill")
-                .font(.system(size: 48))
-                .foregroundStyle(.yellow)
+        ScrollView {
+            VStack(spacing: 22) {
+                QuestSectionHeader(
+                    eyebrow: "Takeaway",
+                    title: "Key Insight",
+                    subtitle: "Lock in the lesson before you move on."
+                )
 
-            Text("Key Insight")
-                .font(.title2.bold())
+                VStack(spacing: 18) {
+                    ZStack {
+                        Circle()
+                            .fill(AppTheme.highlight.opacity(0.14))
+                            .frame(width: 90, height: 90)
+                        Image(systemName: "lightbulb.max.fill")
+                            .font(.system(size: 38))
+                            .foregroundStyle(AppTheme.highlight)
+                    }
 
-            Text(insightText)
-                .font(.body)
-                .multilineTextAlignment(.center)
-                .padding()
-                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+                    Text(insightText)
+                        .font(.system(.body, design: .rounded))
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(AppTheme.textSecondary)
 
-            Spacer()
+                    Text("Carry this forward into the next stage.")
+                        .font(.system(.footnote, design: .rounded).weight(.semibold))
+                        .foregroundStyle(AppTheme.textMuted)
+                }
+                .frame(maxWidth: .infinity)
+                .questCard()
 
-            Button(action: onDismiss) {
-                Text("Continue")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue, in: RoundedRectangle(cornerRadius: 14))
-                    .foregroundStyle(.white)
+                Button(action: onDismiss) {
+                    Text("Continue")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(QuestPrimaryButtonStyle())
+                .accessibilityIdentifier("continue-from-insight")
             }
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.bottom, 28)
         }
-        .padding()
+        .foregroundStyle(AppTheme.textPrimary)
         .accessibilityElement(children: .contain)
     }
 }

@@ -32,7 +32,7 @@ final class Phase6Tests: XCTestCase {
         let stage = Phase6StageDefinitions.stage1
         XCTAssertEqual(stage.phase, 6)
         XCTAssertEqual(stage.stage, 1)
-        guard case .binary = stage.decisionType else {
+        guard TestDataFactory.binaryOptions(from: stage) != nil else {
             XCTFail("Stage 1 must use binary decision type"); return
         }
         XCTAssertEqual(stage.optimalDecision, .binary(choice: "B"),
@@ -204,7 +204,7 @@ final class Phase6Tests: XCTestCase {
 
     func testAllStages_allHaveBinaryDecision() {
         for stage in Phase6StageDefinitions.all {
-            guard case .binary = stage.decisionType else {
+            guard TestDataFactory.binaryOptions(from: stage) != nil else {
                 XCTFail("Phase 6 Stage \(stage.stage) must use binary decision type")
                 return
             }

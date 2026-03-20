@@ -29,17 +29,99 @@ final class DecisionRecord {
     var phase: Int
     var stage: Int
     var decisionType: String
-    var value: Double
-    var optimalValue: Double
+    var playerDecisionJSON: String
+    var optimalDecisionJSON: String
+    var score: Int
+    var decisionLatencyMs: Int
+    var outcomeJSON: String
+    var biasTags: [String]
     var timestamp: Date
 
-    init(phase: Int, stage: Int, decisionType: String,
-         value: Double, optimalValue: Double, timestamp: Date = .now) {
+    init(
+        phase: Int,
+        stage: Int,
+        decisionType: String,
+        playerDecisionJSON: String,
+        optimalDecisionJSON: String,
+        score: Int,
+        decisionLatencyMs: Int,
+        outcomeJSON: String,
+        biasTags: [String] = [],
+        timestamp: Date = .now
+    ) {
         self.phase = phase
         self.stage = stage
         self.decisionType = decisionType
-        self.value = value
-        self.optimalValue = optimalValue
+        self.playerDecisionJSON = playerDecisionJSON
+        self.optimalDecisionJSON = optimalDecisionJSON
+        self.score = score
+        self.decisionLatencyMs = decisionLatencyMs
+        self.outcomeJSON = outcomeJSON
+        self.biasTags = biasTags
         self.timestamp = timestamp
+    }
+}
+
+@Model
+final class StageCompletionRecord {
+    var phase: Int
+    var stage: Int
+    var latestScore: Int
+    var bestScore: Int
+    var latestStars: Int
+    var bestStars: Int
+    var isPassed: Bool
+    var completedAt: Date
+
+    init(
+        phase: Int,
+        stage: Int,
+        latestScore: Int,
+        bestScore: Int,
+        latestStars: Int,
+        bestStars: Int,
+        isPassed: Bool,
+        completedAt: Date = .now
+    ) {
+        self.phase = phase
+        self.stage = stage
+        self.latestScore = latestScore
+        self.bestScore = bestScore
+        self.latestStars = latestStars
+        self.bestStars = bestStars
+        self.isPassed = isPassed
+        self.completedAt = completedAt
+    }
+}
+
+@Model
+final class StageSessionRecord {
+    var phase: Int
+    var stage: Int
+    var flowState: String
+    var currentPeriod: Int
+    var failureCount: Int
+    var pendingDecisionJSON: String?
+    var timeRemaining: Double
+    var savedAt: Date
+
+    init(
+        phase: Int,
+        stage: Int,
+        flowState: String,
+        currentPeriod: Int,
+        failureCount: Int,
+        pendingDecisionJSON: String?,
+        timeRemaining: Double,
+        savedAt: Date = .now
+    ) {
+        self.phase = phase
+        self.stage = stage
+        self.flowState = flowState
+        self.currentPeriod = currentPeriod
+        self.failureCount = failureCount
+        self.pendingDecisionJSON = pendingDecisionJSON
+        self.timeRemaining = timeRemaining
+        self.savedAt = savedAt
     }
 }

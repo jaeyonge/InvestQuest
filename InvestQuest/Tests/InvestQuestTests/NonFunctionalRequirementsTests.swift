@@ -182,15 +182,20 @@ final class NonFunctionalRequirementsTests: XCTestCase {
     }
 
     func testDecisionRecord_storesNoPersonalData() {
-        // DecisionRecord stores: phase, stage, decisionType, value, optimalValue, timestamp
-        // All gameplay analytics — no PII
+        // DecisionRecord stores gameplay JSON and scores, not identity or account data.
         let record = DecisionRecord(
-            phase: 1, stage: 1,
-            decisionType: "binary", value: 100.0, optimalValue: 110.0
+            phase: 1,
+            stage: 1,
+            decisionType: "binary",
+            playerDecisionJSON: "{\"kind\":\"binary\",\"choice\":\"A\"}",
+            optimalDecisionJSON: "{\"kind\":\"binary\",\"choice\":\"B\"}",
+            score: 60,
+            decisionLatencyMs: 800,
+            outcomeJSON: "{\"score\":60}"
         )
         XCTAssertEqual(record.phase, 1)
         XCTAssertEqual(record.stage, 1)
-        XCTAssertEqual(record.value, 100.0, accuracy: 0.01,
-                       "DecisionRecord must store gameplay value, not personal financial data")
+        XCTAssertEqual(record.score, 60)
+        XCTAssertTrue(record.playerDecisionJSON.contains("binary"))
     }
 }

@@ -66,7 +66,7 @@ final class Phase7Tests: XCTestCase {
 
     func testStage2_binaryDecision_cryptoVsIndexFund() {
         let stage = Phase7StageDefinitions.stage2
-        guard case .binary(let a, let b) = stage.decisionType else {
+        guard let (a, b) = TestDataFactory.binaryOptions(from: stage) else {
             XCTFail("Stage 2 must use binary decision type"); return
         }
         XCTAssertFalse(a.isEmpty, "Option A must not be empty")
@@ -124,7 +124,7 @@ final class Phase7Tests: XCTestCase {
 
     func testStage3_binaryDecision_anchoredBuyVsPass() {
         let stage = Phase7StageDefinitions.stage3
-        guard case .binary(let a, let b) = stage.decisionType else {
+        guard let (a, b) = TestDataFactory.binaryOptions(from: stage) else {
             XCTFail("Stage 3 must use binary decision type"); return
         }
         let combined = "\(a) \(b)".lowercased()
@@ -176,7 +176,7 @@ final class Phase7Tests: XCTestCase {
 
     func testStage4_binaryDecision_reviewVsSkip() {
         let stage = Phase7StageDefinitions.stage4
-        guard case .binary(let a, let b) = stage.decisionType else {
+        guard let (a, b) = TestDataFactory.binaryOptions(from: stage) else {
             XCTFail("Stage 4 must use binary decision type"); return
         }
         XCTAssertTrue(a.lowercased().contains("review") || a.lowercased().contains("my"),

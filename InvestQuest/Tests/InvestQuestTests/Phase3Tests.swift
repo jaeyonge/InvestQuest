@@ -15,7 +15,7 @@ final class Phase3Tests: XCTestCase {
 
     func testStage1_assetNamesPresent() {
         let stage = Phase3StageDefinitions.stage1
-        guard case .allocationSlider(let assets, _) = stage.decisionType else {
+        guard let (assets, _) = TestDataFactory.allocationOptions(from: stage) else {
             XCTFail("Stage 1 must use allocationSlider"); return
         }
         XCTAssertTrue(assets.contains("Safe Asset"), "Must include Safe Asset")
@@ -76,7 +76,7 @@ final class Phase3Tests: XCTestCase {
 
     func testStage2_allocationSlider_threeRiskLevels() {
         let stage = Phase3StageDefinitions.stage2
-        guard case .allocationSlider(let assets, let budget) = stage.decisionType else {
+        guard let (assets, budget) = TestDataFactory.allocationOptions(from: stage) else {
             XCTFail("Stage 2 must use allocationSlider"); return
         }
         XCTAssertEqual(assets.count, 3, "Stage 2 must have 3 risk levels")
@@ -120,7 +120,7 @@ final class Phase3Tests: XCTestCase {
 
     func testStage3_multiAssetRanking_threeFunds() {
         let stage = Phase3StageDefinitions.stage3
-        guard case .multiAssetRanking(let assets) = stage.decisionType else {
+        guard let assets = TestDataFactory.rankingAssets(from: stage) else {
             XCTFail("Stage 3 must use multiAssetRanking"); return
         }
         XCTAssertEqual(assets.count, 3)
@@ -174,7 +174,7 @@ final class Phase3Tests: XCTestCase {
 
     func testStage4_binaryDecision_guaranteedVsIndex() {
         let stage = Phase3StageDefinitions.stage4
-        guard case .binary(let a, let b) = stage.decisionType else {
+        guard let (a, b) = TestDataFactory.binaryOptions(from: stage) else {
             XCTFail("Stage 4 must use binary decision type"); return
         }
         XCTAssertTrue(a.lowercased().contains("guaranteed"),

@@ -47,51 +47,26 @@ final class MarketSimulationEngine: MarketSimulationEngineProtocol {
 
     // MARK: - simulate
 
-    func simulate(config: StageConfig) -> SimulationResult {
+    func simulate(stage: StageSimulation) -> SimulationResult {
         let start = Date()
 
-        var rng = RNG(seed: config.seed)
-
-        // Per-step drift and vol (assuming timePeriods represents years; step = 1 period)
-        let stepDrift = config.drift / Double(config.timePeriods)
-        let stepVol   = config.volatility / Foundation.sqrt(Double(config.timePeriods))
-
-        // Build event lookup: [period: [assetIndex: factor]]
-        var events: [Int: [Int: Double]] = [:]
-        for event in config.eventInjections {
-            if events[event.period] == nil { events[event.period] = [:] }
-            events[event.period]![event.assetIndex] = event.magnitudeFactor
-        }
-
-        var histories: [AssetPriceHistory] = []
-
-        for assetIdx in 0..<config.assetCount {
-            var prices = [Double](repeating: 0, count: config.timePeriods + 1)
-            prices[0] = 100.0  // normalised base price
-
-            for t in 0..<config.timePeriods {
-                let z = rng.nextNormal()
-                let logReturn = stepDrift + stepVol * z
-                var nextPrice = prices[t] * Foundation.exp(logReturn)
-
-                // Apply event injection if present
-                if let periodEvents = events[t + 1] {
-                    if let factor = periodEvents[assetIdx] {
-                        nextPrice *= factor
-                    } else if let factor = periodEvents[-1] {
-                        nextPrice *= factor
-                    }
-                }
-
-                // Clamp to prevent degenerate prices (never zero or negative)
-                prices[t + 1] = max(nextPrice, 0.01)
-            }
-
-            histories.append(AssetPriceHistory(assetIndex: assetIdx, prices: prices))
+        let runs = (0..<max(1, stage.replayCount)).map { replayIndex in
+            let seed = stage.seed + UInt64(replayIndex)
+            return SimulationRun(seed: seed, assetHistories: simulateRun(stage: stage, seed: seed))
         }
 
         let elapsed = Date().timeIntervalSince(start)
-        return SimulationResult(seed: config.seed, assetHistories: histories, durationSeconds: elapsed)
+        return SimulationResult(runs: runs, durationSeconds: elapsed)
+    }
+
+    func simulate(config: StageConfig) -> SimulationResult {
+        simulate(stage: StageSimulation.fromLegacy(
+            config: config,
+            phase: 0,
+            stage: 0,
+            assetIDs: (0..<config.assetCount).map { "asset\($0)" },
+            assetLabels: (0..<config.assetCount).map { "Asset \($0 + 1)" }
+        ))
     }
 
     // MARK: - simulateBatch
@@ -110,5 +85,101 @@ final class MarketSimulationEngine: MarketSimulationEngineProtocol {
             )
             return simulate(config: cfg)
         }
+    }
+
+    // MARK: - Private
+
+    private func simulateRun(stage: StageSimulation, seed: UInt64) -> [AssetPriceHistory] {
+        var rng = RNG(seed: seed)
+        var groupNormals: [Int: [String: Double]] = [:]
+
+        for period in 0..<stage.periodCount {
+            var groups: Set<String> = []
+            for asset in stage.assets {
+                if let correlationGroup = asset.correlationGroup {
+                    groups.insert(correlationGroup)
+                }
+            }
+            groupNormals[period] = Dictionary(uniqueKeysWithValues: groups.map { ($0, rng.nextNormal()) })
+        }
+
+        var histories: [AssetPriceHistory] = []
+        for (assetIndex, asset) in stage.assets.enumerated() {
+            var prices = [Double](repeating: 0, count: stage.periodCount + 1)
+            prices[0] = asset.startingValue
+            var stopLossFloor: Double?
+
+            for period in 0..<stage.periodCount {
+                let periodNumber = period + 1
+                let idiosyncraticShock = rng.nextNormal()
+                let groupShock: Double
+                if let correlationGroup = asset.correlationGroup,
+                   let shared = groupNormals[period]?[correlationGroup] {
+                    groupShock = shared * min(max(asset.correlationStrength, 0), 1)
+                } else {
+                    groupShock = 0
+                }
+
+                let lessonAdjustment: Double
+                switch asset.lessonRole {
+                case .preferred:
+                    lessonAdjustment = stage.lessonBias
+                case .penalized:
+                    lessonAdjustment = -stage.lessonBias
+                case .neutral:
+                    lessonAdjustment = 0
+                }
+
+                var drift = asset.drift + lessonAdjustment - asset.annualFee
+                var volatility = max(asset.volatility, 0.001)
+                var multiplier = 1.0
+
+                for event in stage.events where event.period == periodNumber {
+                    guard applies(event: event, to: asset) else { continue }
+                    switch event.kind {
+                    case .multiplier(let factor):
+                        multiplier *= factor
+                    case .driftShift(let shift):
+                        drift += shift
+                    case .volatilityShift(let shift):
+                        volatility = max(0.001, volatility + shift)
+                    case .feeDrag(let fee):
+                        drift -= fee
+                    case .bankruptcy(let floor):
+                        multiplier *= floor
+                    case .stopLossFloor(let floor):
+                        stopLossFloor = floor
+                    }
+                }
+
+                let blendedShock = groupShock + idiosyncraticShock * (1 - min(max(asset.correlationStrength, 0), 1))
+                let stepDrift = drift / Double(max(stage.periodCount, 1))
+                let stepVolatility = volatility / Foundation.sqrt(Double(max(stage.periodCount, 1)))
+                let logReturn = stepDrift + stepVolatility * blendedShock
+                var nextPrice = prices[period] * Foundation.exp(logReturn)
+                nextPrice *= multiplier
+
+                if let stopLossFloor, nextPrice / max(prices[0], 0.01) <= stopLossFloor {
+                    nextPrice = prices[0] * stopLossFloor
+                }
+
+                prices[periodNumber] = max(nextPrice, 0.01)
+            }
+
+            histories.append(
+                AssetPriceHistory(
+                    assetIndex: assetIndex,
+                    assetID: asset.id,
+                    prices: prices
+                )
+            )
+        }
+
+        return histories
+    }
+
+    private func applies(event: SimulationEvent, to asset: SimAssetConfig) -> Bool {
+        guard let assetIDs = event.assetIDs, !assetIDs.isEmpty else { return true }
+        return assetIDs.contains(asset.id)
     }
 }

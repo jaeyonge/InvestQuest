@@ -33,17 +33,51 @@ final class Phase1Tests: XCTestCase {
                       "Stage 1 description must reference 10 years")
     }
 
+    func testStage1_observeUsesStableActionID() {
+        let stage = Phase1StageDefinitions.stage1
+        guard case .observe(_, let actionID, _, _) = stage.decision else {
+            XCTFail("Stage 1 must use the typed observe decision")
+            return
+        }
+
+        XCTAssertEqual(stage.optimalDecision, .binary(choice: actionID),
+                       "Stage 1 optimal decision must use the stable observe action ID")
+    }
+
+    @MainActor
+    func testStage1_observeDecisionPassesAndUnlocksProgression() {
+        let stage = Phase1StageDefinitions.stage1
+        guard case .observe(_, let actionID, _, _) = stage.decision else {
+            XCTFail("Stage 1 must use the typed observe decision")
+            return
+        }
+
+        let viewModel = StageViewModel(definition: stage)
+        viewModel.advanceFromBriefing()
+        viewModel.submitDecision(.binary(choice: actionID))
+        viewModel.finishSimulation()
+
+        guard case .result(let outcome) = viewModel.flowState else {
+            XCTFail("Stage 1 should reach a result state after simulation")
+            return
+        }
+
+        XCTAssertTrue(outcome.passed, "The mandatory observe action must pass Stage 1")
+        XCTAssertGreaterThanOrEqual(outcome.score, stage.minimumPassingScore)
+    }
+
     // MARK: - AC2: Stage 2 — Cash vs Savings
 
     func testStage2_addsSavingsOption() {
         let stage = Phase1StageDefinitions.stage2
         XCTAssertEqual(stage.simulationConfig.assetCount, 2, "Stage 2 has 2 assets")
-        guard case .allocationSlider(let assets, _) = stage.decisionType else {
-            XCTFail("Stage 2 must use allocationSlider"); return
+        guard let (assets, _) = TestDataFactory.allocationOptions(from: stage) else {
+            XCTFail("Stage 2 must use allocation input"); return
         }
         XCTAssertEqual(assets.count, 2)
         XCTAssertTrue(assets.contains("Cash"))
         XCTAssertTrue(assets.contains("Savings Account"))
+        XCTAssertGreaterThan(stage.timeoutSeconds, 0, "Stage 2 should support the real timeout flow")
     }
 
     func testStage2_oneNewVariableVsStage1() {
@@ -58,8 +92,8 @@ final class Phase1Tests: XCTestCase {
     func testStage3_addsInflationTrackingAsset() {
         let stage = Phase1StageDefinitions.stage3
         XCTAssertEqual(stage.simulationConfig.assetCount, 3, "Stage 3 has 3 assets")
-        guard case .allocationSlider(let assets, _) = stage.decisionType else {
-            XCTFail("Stage 3 must use allocationSlider"); return
+        guard let (assets, _) = TestDataFactory.allocationOptions(from: stage) else {
+            XCTFail("Stage 3 must use allocation input"); return
         }
         XCTAssertEqual(assets.count, 3)
         XCTAssertTrue(assets.contains("Cash"))
@@ -93,14 +127,17 @@ final class Phase1Tests: XCTestCase {
     }
 
     func testStage4_oneNewVariableVsStage3_activeReallocation() {
-        // New variable in Stage 4: timed/active reallocation mechanic
+        // Stage 4 adds short-horizon active reallocation around an inflation spike.
         let s3 = Phase1StageDefinitions.stage3
         let s4 = Phase1StageDefinitions.stage4
-        // Stage 3 uses allocationSlider (static), Stage 4 uses timed (active)
-        if case .allocationSlider = s3.decisionType, case .timed = s4.decisionType {
-            // Pass — one new mechanic (timed) introduced
-        } else {
-            XCTFail("Stage 4 must introduce timed/active reallocation as its new variable")
+        XCTAssertGreaterThan(s4.simulationConfig.eventInjections.count, s3.simulationConfig.eventInjections.count,
+                             "Stage 4 must add the inflation-shock event structure")
+        XCTAssertLessThan(s4.simulationConfig.timePeriods, s3.simulationConfig.timePeriods,
+                          "Stage 4 must switch to a short active-reallocation horizon")
+        guard case .timed(let underlying, _) = s4.decisionType,
+              case .allocationSlider = underlying else {
+            XCTFail("Stage 4 must use a timed allocation decision")
+            return
         }
     }
 
@@ -114,7 +151,7 @@ final class Phase1Tests: XCTestCase {
 
     func testStage5_binaryChoiceBetweenStrategies() {
         let stage = Phase1StageDefinitions.stage5
-        guard case .binary(let a, let b) = stage.decisionType else {
+        guard let (a, b) = TestDataFactory.binaryOptions(from: stage) else {
             XCTFail("Stage 5 must use binary choice"); return
         }
         let combined = "\(a) \(b)".lowercased()

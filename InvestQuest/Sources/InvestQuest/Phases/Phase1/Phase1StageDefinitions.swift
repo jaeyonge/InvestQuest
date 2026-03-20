@@ -40,7 +40,7 @@ enum Phase1StageDefinitions {
                 description: "observe"
             )
         ),
-        optimalDecision: .binary(choice: "Observe"),
+        optimalDecision: .binary(choice: "observe"),
         timeoutSeconds: 0,
         insightText: "Your ₩10M lost real value every year — not because you spent it, but because inflation made everything more expensive. Holding cash is a slow loss.",
         hintText: "Watch the purchasing power line. It only goes one direction.",

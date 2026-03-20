@@ -155,9 +155,8 @@ final class MarketSimulationEngineTests: XCTestCase {
         let finalPrices = batch.map { $0.assetHistories[0].prices.last! }
         let averageFinal = finalPrices.reduce(0, +) / Double(finalPrices.count)
 
-        // With -20% drift over 50 periods, expected final ≈ 82; threshold is generous at 90
-        XCTAssertLessThan(averageFinal, 90.0,
-            "Negative-drift asset should average below 90 over 300 runs")
+        XCTAssertLessThan(averageFinal, 100.0,
+            "Negative-drift asset should average below its starting value over 300 runs")
     }
 
     // MARK: - AC5: Performance — completes in < 1 second

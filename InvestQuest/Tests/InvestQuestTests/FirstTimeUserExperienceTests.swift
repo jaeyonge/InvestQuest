@@ -5,15 +5,6 @@ import SwiftData
 @MainActor
 final class FirstTimeUserExperienceTests: XCTestCase {
 
-    private func makeInMemoryContext() throws -> ModelContext {
-        let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        let container = try ModelContainer(
-            for: GameProgress.self, DecisionRecord.self, PhaseCompletionRecord.self,
-            configurations: config
-        )
-        return ModelContext(container)
-    }
-
     // MARK: - AC1: Intro shows 'Your money is disappearing'
 
     func testIntroMessage_containsKeyPhrase() {
@@ -32,58 +23,100 @@ final class FirstTimeUserExperienceTests: XCTestCase {
                        "Intro subtitle must not be empty")
     }
 
-    // MARK: - AC2: No signup gate — AppViewModel goes straight to phaseMap after intro
+    // MARK: - AC2: No signup gate — intro routes straight into the game loop
 
-    func testAppViewModel_newUser_startsAtIntro() {
-        let vm = AppViewModel(progress: nil)
-        XCTAssertEqual(vm.currentRoute, .intro,
-                       "New user with no progress must start at intro")
-    }
+    func testBootstrap_newUser_startsAtIntro() throws {
+        let (_, _, service) = try TestDataFactory.makeService(progress: GameProgress(hasSeenIntro: false))
+        let vm = AppViewModel()
 
-    func testAppViewModel_returningUser_skipsIntroToPhaseMap() {
-        let progress = GameProgress(hasSeenIntro: true)
-        let vm = AppViewModel(progress: progress)
-        XCTAssertEqual(vm.currentRoute, .phaseMap,
-                       "Returning user must skip intro and go directly to phase map")
-    }
+        vm.bootstrap(using: service)
 
-    func testAppViewModel_noSignupOrOnboardingGate() {
-        // After intro completes, route is immediately phaseMap (no tutorial/signup intermediate)
-        let vm = AppViewModel(progress: nil)
         XCTAssertEqual(vm.currentRoute, .intro)
-        // completeIntro goes directly to .phaseMap — no intermediate state
+    }
+
+    func testBootstrap_returningUser_skipsIntroToCurrentStage() throws {
+        let progress = GameProgress(currentPhase: 1, currentStage: 2, hasSeenIntro: true)
+        let (_, _, service) = try TestDataFactory.makeService(progress: progress)
+        let vm = AppViewModel()
+
+        vm.bootstrap(using: service)
+
+        XCTAssertEqual(vm.currentRoute, .stage(StageAddress(phase: 1, stage: 1)),
+                       "Locked current stage should fall back to the current unlocked stage")
+    }
+
+    func testBootstrap_savedSession_resumesThatStage() throws {
+        let progress = GameProgress(currentPhase: 1, currentStage: 1, hasSeenIntro: true)
+        let (_, _, service) = try TestDataFactory.makeService(progress: progress)
+        service.completeStage(address: StageAddress(phase: 1, stage: 1), outcome: TestDataFactory.makeOutcome(score: 80))
+        let snapshot = StageSessionSnapshot(
+            address: StageAddress(phase: 1, stage: 2),
+            flowState: .decision,
+            currentPeriod: 0,
+            failureCount: 1,
+            pendingDecision: nil,
+            timeRemaining: 12
+        )
+        service.saveSession(snapshot)
+
+        let vm = AppViewModel()
+        vm.bootstrap(using: service)
+
+        XCTAssertEqual(vm.currentRoute, .stage(StageAddress(phase: 1, stage: 2)))
+    }
+
+    func testBootstrap_ignoresStaleLevelOneSessionWhenProgressHasAdvanced() throws {
+        let progress = GameProgress(hasSeenIntro: true)
+        let (_, context, service) = try TestDataFactory.makeService(progress: progress)
+        service.completeStage(address: StageAddress(phase: 1, stage: 1), outcome: TestDataFactory.makeOutcome(score: 80))
+        context.insert(
+            StageSessionRecord(
+                phase: 1,
+                stage: 1,
+                flowState: StageFlowSnapshotState.briefing.rawValue,
+                currentPeriod: 0,
+                failureCount: 0,
+                pendingDecisionJSON: nil,
+                timeRemaining: 0
+            )
+        )
+        try context.save()
+
+        let vm = AppViewModel()
+        vm.bootstrap(using: service)
+
+        XCTAssertEqual(vm.currentRoute, .stage(StageAddress(phase: 1, stage: 2)))
     }
 
     // MARK: - AC3: Phase 1 Stage 1 starts after intro
 
-    func testAppViewModel_completeIntro_routesToPhaseMap() throws {
-        let context = try makeInMemoryContext()
-        let vm = AppViewModel(progress: nil)
-        vm.completeIntro(modelContext: context)
-        XCTAssertEqual(vm.currentRoute, .phaseMap,
-                       "After intro completes, app must route to phase map")
+    func testCompleteIntro_routesToStageOneAndMarksProgress() throws {
+        let progress = GameProgress(hasSeenIntro: false)
+        let (_, context, service) = try TestDataFactory.makeService(progress: progress)
+        let vm = AppViewModel()
+
+        vm.completeIntro(using: service)
+        try context.save()
+
+        XCTAssertEqual(vm.currentRoute, .stage(StageCatalog.introAddress))
+        XCTAssertTrue(progress.hasSeenIntro)
     }
 
-    func testAppViewModel_completeIntro_persistsHasSeenIntro() throws {
-        let context = try makeInMemoryContext()
-        let vm = AppViewModel(progress: nil)
-        vm.completeIntro(modelContext: context)
+    func testBootstrap_longAbsentReturningUser_showsRecap() throws {
+        let longAgo = Date().addingTimeInterval(-8 * 86_400)
+        let progress = GameProgress(
+            currentPhase: 3,
+            currentStage: 1,
+            completedPhases: [1, 2],
+            lastPlayedDate: longAgo,
+            hasSeenIntro: true
+        )
+        let (_, _, service) = try TestDataFactory.makeService(progress: progress)
+        let vm = AppViewModel()
 
-        let descriptor = FetchDescriptor<GameProgress>()
-        let records = try context.fetch(descriptor)
-        XCTAssertTrue(records.first?.hasSeenIntro ?? false,
-                      "hasSeenIntro must be persisted after intro completion")
-    }
+        vm.bootstrap(using: service)
 
-    func testFirstLaunch_newUser_isFirstLaunch() {
-        let vm = AppViewModel(progress: nil)
-        XCTAssertTrue(vm.isFirstLaunch)
-    }
-
-    func testFirstLaunch_returningUser_isNotFirstLaunch() {
-        let progress = GameProgress(hasSeenIntro: true)
-        let vm = AppViewModel(progress: progress)
-        XCTAssertFalse(vm.isFirstLaunch)
+        XCTAssertEqual(vm.currentRoute, .recap(StageCatalog.lastAddress(inPhase: 2)!))
     }
 
     // MARK: - AC4: Intro animation ≤ 30 seconds
@@ -105,31 +138,29 @@ final class FirstTimeUserExperienceTests: XCTestCase {
     // MARK: - AC5: Stage 2 auto-unlocks after Stage 1 completion
 
     func testStage2_autoUnlocksAfterStage1() throws {
-        let context = try makeInMemoryContext()
-        let progress = GameProgress()
-        context.insert(progress)
-        let service = GameProgressService(progress: progress)
+        let (_, _, service) = try TestDataFactory.makeService()
+        let address = StageAddress(phase: 1, stage: 1)
 
-        // Stage 1 of phase 1 is unlocked by default
         XCTAssertTrue(service.isStageUnlocked(phase: 1, stage: 1))
-        XCTAssertFalse(service.isStageUnlocked(phase: 1, stage: 2),
-                       "Stage 2 must be locked before Stage 1 is completed")
+        XCTAssertFalse(service.isStageUnlocked(phase: 1, stage: 2))
 
-        // Complete Stage 1 with passing score
-        service.completeStage(phase: 1, stage: 1, score: 70, modelContext: context)
+        service.completeStage(address: address, outcome: TestDataFactory.makeOutcome(score: 70))
 
-        XCTAssertTrue(service.isStageUnlocked(phase: 1, stage: 2),
-                      "Stage 2 must automatically unlock after Stage 1 completion with passing score")
+        XCTAssertTrue(service.isStageUnlocked(phase: 1, stage: 2))
     }
 
     func testStage2_doesNotUnlockWithFailingScore() throws {
-        let context = try makeInMemoryContext()
-        let progress = GameProgress()
-        context.insert(progress)
-        let service = GameProgressService(progress: progress)
+        let (_, _, service) = try TestDataFactory.makeService()
 
-        service.completeStage(phase: 1, stage: 1, score: 30, modelContext: context)
-        XCTAssertFalse(service.isStageUnlocked(phase: 1, stage: 2),
-                       "Stage 2 must not unlock when Stage 1 score is below threshold")
+        service.completeStage(
+            address: StageAddress(phase: 1, stage: 1),
+            outcome: TestDataFactory.makeOutcome(
+                score: 30,
+                decision: PlayerDecision.holdCash,
+                optimal: PlayerDecision.binary(choice: "A")
+            )
+        )
+
+        XCTAssertFalse(service.isStageUnlocked(phase: 1, stage: 2))
     }
 }

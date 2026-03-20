@@ -1,10 +1,7 @@
 import SwiftUI
 
-/// Brief animated intro shown on first launch.
-/// Target: user sees the message and can start playing within 30 seconds.
 struct IntroAnimationView: View {
-
-    static let introDurationSeconds: Double = 4.0  // animation auto-advances after this
+    static let introDurationSeconds: Double = 4.0
     static let introMessage = "Your money is disappearing."
     static let introSubtitle = "Let's find out why."
 
@@ -15,31 +12,45 @@ struct IntroAnimationView: View {
     @State private var buttonOpacity: Double = 0
     @State private var coinScale: CGFloat = 0.3
     @State private var coinOpacity: Double = 0
+    @State private var hasCompleted = false
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            QuestBackgroundView()
 
             VStack(spacing: 32) {
                 Spacer()
 
-                // Shrinking coin animation
-                Image(systemName: "yensign.circle.fill")
-                    .font(.system(size: 80))
-                    .foregroundStyle(.yellow)
-                    .scaleEffect(coinScale)
-                    .opacity(coinOpacity)
+                ZStack {
+                    Circle()
+                        .fill(AppTheme.highlight.opacity(0.16))
+                        .frame(width: 150, height: 150)
+                        .blur(radius: 6)
+                    Circle()
+                        .stroke(AppTheme.highlight.opacity(0.30), lineWidth: 1.5)
+                        .frame(width: 120, height: 120)
+                    Image(systemName: "yensign.circle.fill")
+                        .font(.system(size: 78))
+                        .foregroundStyle(AppTheme.highlight)
+                        .scaleEffect(coinScale)
+                        .opacity(coinOpacity)
+                }
 
-                VStack(spacing: 12) {
+                VStack(spacing: 14) {
+                    Text("INVESTQUEST")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .tracking(2.4)
+                        .foregroundStyle(AppTheme.accent)
+
                     Text(Self.introMessage)
-                        .font(.title.bold())
-                        .foregroundStyle(.white)
+                        .font(.system(size: 34, weight: .bold, design: .rounded))
+                        .foregroundStyle(AppTheme.textPrimary)
                         .multilineTextAlignment(.center)
                         .opacity(titleOpacity)
 
                     Text(Self.introSubtitle)
-                        .font(.title3)
-                        .foregroundStyle(.gray)
+                        .font(.system(.title3, design: .rounded))
+                        .foregroundStyle(AppTheme.textSecondary)
                         .multilineTextAlignment(.center)
                         .opacity(subtitleOpacity)
                 }
@@ -47,17 +58,29 @@ struct IntroAnimationView: View {
 
                 Spacer()
 
-                Button(action: onComplete) {
-                    Text("Start")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.blue, in: RoundedRectangle(cornerRadius: 14))
-                        .foregroundStyle(.white)
+                VStack(spacing: 16) {
+                    Text("A playable investing simulation about inflation, valuation, risk, and behavioral bias.")
+                        .font(.system(.footnote, design: .rounded))
+                        .foregroundStyle(AppTheme.textMuted)
+                        .multilineTextAlignment(.center)
+
+                    Button {
+                        guard !hasCompleted else { return }
+                        hasCompleted = true
+                        onComplete()
+                    } label: {
+                        Text("Start")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(QuestPrimaryButtonStyle())
+                    .accessibilityIdentifier("intro-start")
                 }
-                .padding(.horizontal, 32)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 24)
+                .questCard(fill: AppTheme.surface.opacity(0.82))
+                .padding(.horizontal, 20)
                 .opacity(buttonOpacity)
-                .padding(.bottom, 40)
+                .padding(.bottom, 32)
             }
         }
         .onAppear {
@@ -70,7 +93,6 @@ struct IntroAnimationView: View {
             coinOpacity = 1
             coinScale = 1.0
         }
-        // Coin shrinks (represents losing value)
         withAnimation(.easeInOut(duration: 1.2).delay(0.6)) {
             coinScale = 0.5
         }
@@ -83,9 +105,11 @@ struct IntroAnimationView: View {
         withAnimation(.easeIn(duration: 0.5).delay(2.0)) {
             buttonOpacity = 1
         }
-        // Auto-advance after introDurationSeconds
+
         Task {
             try? await Task.sleep(nanoseconds: UInt64(Self.introDurationSeconds * 1_000_000_000))
+            guard !hasCompleted else { return }
+            hasCompleted = true
             onComplete()
         }
     }
