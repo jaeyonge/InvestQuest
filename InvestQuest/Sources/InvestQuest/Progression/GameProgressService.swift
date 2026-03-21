@@ -72,13 +72,25 @@ final class GameProgressService: ObservableObject {
     }
 
     func addressForPhaseSelection(_ phase: Int) -> StageAddress {
-        firstUnlockedStage(inPhase: phase) ?? StageCatalog.definitions(forPhase: phase).first?.address ?? StageCatalog.introAddress
+        let current = currentAddress()
+        if current.phase == phase {
+            return current
+        }
+        return lastUnlockedStage(inPhase: phase)
+            ?? StageCatalog.definitions(forPhase: phase).first?.address
+            ?? StageCatalog.introAddress
     }
 
     func firstUnlockedStage(inPhase phase: Int) -> StageAddress? {
         StageCatalog.definitions(forPhase: phase)
             .map(\.address)
             .first(where: { isStageUnlocked(phase: $0.phase, stage: $0.stage) })
+    }
+
+    func lastUnlockedStage(inPhase phase: Int) -> StageAddress? {
+        StageCatalog.definitions(forPhase: phase)
+            .map(\.address)
+            .last(where: { isStageUnlocked(phase: $0.phase, stage: $0.stage) })
     }
 
     func completion(for address: StageAddress) -> StageCompletionRecord? {

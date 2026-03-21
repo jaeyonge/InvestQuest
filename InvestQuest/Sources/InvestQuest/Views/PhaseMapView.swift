@@ -39,11 +39,17 @@ struct PhaseMapView: View {
                                 isUnlocked: service.isPhaseUnlocked(phase.id),
                                 isCompleted: service.isPhaseCompleted(phase.id),
                                 isCurrent: service.progress.currentPhase == phase.id,
-                                stageLabel: service.addressForPhaseSelection(phase.id).stage
-                            ) {
-                                guard service.isPhaseUnlocked(phase.id) else { return }
-                                appViewModel.openStage(service.addressForPhaseSelection(phase.id))
-                            }
+                                isStageUnlocked: { stage in
+                                    service.isStageUnlocked(phase: phase.id, stage: stage)
+                                },
+                                isStageCompleted: { stage in
+                                    service.completion(for: StageAddress(phase: phase.id, stage: stage))?.isPassed == true
+                                },
+                                onSelectStage: { stage in
+                                    guard service.isStageUnlocked(phase: phase.id, stage: stage) else { return }
+                                    appViewModel.openStage(StageAddress(phase: phase.id, stage: stage))
+                                }
+                            )
                         }
                     }
                     .padding(.horizontal, 20)
@@ -70,82 +76,125 @@ struct PhaseNodeView: View {
     let isUnlocked: Bool
     let isCompleted: Bool
     let isCurrent: Bool
-    let stageLabel: Int
-    let onSelect: () -> Void
+    let isStageUnlocked: (Int) -> Bool
+    let isStageCompleted: (Int) -> Bool
+    let onSelectStage: (Int) -> Void
 
     var body: some View {
-        Button(action: onSelect) {
-            HStack(spacing: 16) {
-                ZStack {
-                    Circle()
-                        .fill(nodeColor.opacity(0.22))
-                        .frame(width: 58, height: 58)
-                    Circle()
-                        .stroke(nodeColor.opacity(0.6), lineWidth: 1.5)
-                        .frame(width: 58, height: 58)
+        // Outer button makes the phase node an interactive element so XCUITest
+        // can check isEnabled (disabled for locked phases). Inner stage buttons
+        // intercept taps for their own area; the outer button handles header taps.
+        Button {
+            if let firstUnlocked = (1...config.stageCount).first(where: { isStageUnlocked($0) }) {
+                onSelectStage(firstUnlocked)
+            }
+        } label: {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 16) {
+                    ZStack {
+                        Circle()
+                            .fill(nodeColor.opacity(0.22))
+                            .frame(width: 58, height: 58)
+                        Circle()
+                            .stroke(nodeColor.opacity(0.6), lineWidth: 1.5)
+                            .frame(width: 58, height: 58)
 
-                    if isCompleted {
-                        Image(systemName: "checkmark")
-                            .foregroundStyle(nodeColor)
-                            .fontWeight(.bold)
-                    } else if !isUnlocked {
-                        Image(systemName: "lock.fill")
-                            .foregroundStyle(nodeColor)
-                    } else {
-                        Text("\(config.id)")
-                            .foregroundStyle(nodeColor)
-                            .fontWeight(.bold)
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Phase \(config.id)")
-                            .font(.system(.caption, design: .rounded).weight(.semibold))
-                            .foregroundStyle(AppTheme.textMuted)
-                        Spacer(minLength: 0)
-                        if isCurrent {
-                            QuestChip(text: "Current", accent: AppTheme.accent)
-                        } else if isCompleted {
-                            QuestChip(text: "Cleared", accent: AppTheme.success)
+                        if isCompleted {
+                            Image(systemName: "checkmark")
+                                .foregroundStyle(nodeColor)
+                                .fontWeight(.bold)
                         } else if !isUnlocked {
-                            QuestChip(text: "Locked", accent: AppTheme.surfaceInteractive)
+                            Image(systemName: "lock.fill")
+                                .foregroundStyle(nodeColor)
+                        } else {
+                            Text("\(config.id)")
+                                .foregroundStyle(nodeColor)
+                                .fontWeight(.bold)
                         }
                     }
 
-                    Text(config.title)
-                        .font(.system(.headline, design: .rounded).weight(.semibold))
-                        .foregroundStyle(isUnlocked ? AppTheme.textPrimary : AppTheme.textSecondary)
-
-                    Text(isUnlocked ? config.concept : config.teaserDescription)
-                        .font(.system(.subheadline, design: .rounded))
-                        .foregroundStyle(AppTheme.textSecondary)
-                        .lineLimit(2)
-
-                    HStack(spacing: 10) {
-                        if isUnlocked {
-                            QuestChip(
-                                text: isCompleted ? "Replay" : "Open Stage \(stageLabel)",
-                                accent: isCompleted ? AppTheme.highlight : AppTheme.accent
-                            )
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text("Phase \(config.id)")
+                                .font(.system(.caption, design: .rounded).weight(.semibold))
+                                .foregroundStyle(AppTheme.textMuted)
+                            Spacer(minLength: 0)
+                            if isCurrent {
+                                QuestChip(text: "Current", accent: AppTheme.accent)
+                            } else if isCompleted {
+                                QuestChip(text: "Cleared", accent: AppTheme.success)
+                            } else if !isUnlocked {
+                                QuestChip(text: "Locked", accent: AppTheme.surfaceInteractive)
+                            }
                         }
-                        QuestChip(text: "\(config.stageCount) stages", accent: AppTheme.surfaceInteractive)
+
+                        Text(config.title)
+                            .font(.system(.headline, design: .rounded).weight(.semibold))
+                            .foregroundStyle(isUnlocked ? AppTheme.textPrimary : AppTheme.textSecondary)
+
+                        Text(isUnlocked ? config.concept : config.teaserDescription)
+                            .font(.system(.subheadline, design: .rounded))
+                            .foregroundStyle(AppTheme.textSecondary)
+                            .lineLimit(2)
                     }
+
+                    Spacer(minLength: 0)
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(isUnlocked ? AppTheme.textMuted : AppTheme.border)
                 }
 
-                Spacer(minLength: 0)
+                if isUnlocked {
+                    Rectangle()
+                        .fill(AppTheme.border.opacity(0.35))
+                        .frame(height: 1)
+                        .padding(.vertical, 12)
 
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(isUnlocked ? AppTheme.textMuted : AppTheme.border)
+                    HStack(spacing: 8) {
+                        ForEach(1...config.stageCount, id: \.self) { stage in
+                            let unlocked = isStageUnlocked(stage)
+                            let completed = isStageCompleted(stage)
+                            Button {
+                                onSelectStage(stage)
+                            } label: {
+                                ZStack {
+                                    Circle()
+                                        .fill(stageCircleFill(unlocked: unlocked, completed: completed))
+                                        .frame(width: 38, height: 38)
+                                    Circle()
+                                        .stroke(stageCircleBorder(unlocked: unlocked, completed: completed), lineWidth: 1.5)
+                                        .frame(width: 38, height: 38)
+                                    if completed {
+                                        Image(systemName: "checkmark")
+                                            .font(.system(size: 13, weight: .bold))
+                                            .foregroundStyle(AppTheme.success)
+                                    } else if !unlocked {
+                                        Image(systemName: "lock.fill")
+                                            .font(.system(size: 12))
+                                            .foregroundStyle(AppTheme.textMuted)
+                                    } else {
+                                        Text("\(stage)")
+                                            .font(.system(size: 15, weight: .semibold, design: .rounded))
+                                            .foregroundStyle(AppTheme.accent)
+                                    }
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(!unlocked)
+                            .opacity(unlocked ? 1.0 : 0.45)
+                            .accessibilityLabel(stageAccessibilityLabel(stage: stage, unlocked: unlocked, completed: completed))
+                            .accessibilityIdentifier("stage-button-\(config.id)-\(stage)")
+                        }
+                        Spacer()
+                    }
+                }
             }
             .questCard(fill: cardFill)
         }
         .buttonStyle(.plain)
         .disabled(!isUnlocked)
         .opacity(isUnlocked ? 1 : 0.72)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(accessibilityLabel)
         .accessibilityIdentifier("phase-node-\(config.id)")
     }
 
@@ -163,8 +212,20 @@ struct PhaseNodeView: View {
         return AppTheme.surfaceRaised.opacity(0.92)
     }
 
-    private var accessibilityLabel: String {
-        let status = isCompleted ? "Completed" : (isUnlocked ? "Unlocked" : "Locked")
-        return "Phase \(config.id): \(config.title). \(status)."
+    private func stageCircleFill(unlocked: Bool, completed: Bool) -> Color {
+        if completed { return AppTheme.success.opacity(0.15) }
+        if unlocked { return AppTheme.accent.opacity(0.15) }
+        return AppTheme.surfaceInteractive.opacity(0.25)
+    }
+
+    private func stageCircleBorder(unlocked: Bool, completed: Bool) -> Color {
+        if completed { return AppTheme.success.opacity(0.55) }
+        if unlocked { return AppTheme.accent.opacity(0.55) }
+        return AppTheme.border.opacity(0.3)
+    }
+
+    private func stageAccessibilityLabel(stage: Int, unlocked: Bool, completed: Bool) -> String {
+        let status = completed ? "completed" : (unlocked ? "unlocked" : "locked")
+        return "Stage \(stage), \(status)"
     }
 }
