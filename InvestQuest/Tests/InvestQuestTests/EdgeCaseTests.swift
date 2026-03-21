@@ -10,18 +10,34 @@ final class EdgeCaseTests: XCTestCase {
 
     func testTimeout_holdCashDecision_isDefaultOnTimeout() async {
         let definition = StageDefinition(
-            phase: 1, stage: 1,
-            scenarioTitle: "Timeout Test",
-            scenarioDescription: "Test timeout behavior.",
-            decisionType: .binary(optionA: "Invest", optionB: "Hold"),
-            simulationConfig: StageConfig(
-                seed: 1, assetCount: 2, timePeriods: 5,
-                volatility: 0.1, drift: 0.05,
-                eventInjections: [],
-                outcomeWeight: StageConfig.OutcomeWeight(correctStrategyWeight: 0.65, description: "test")
+            address: StageAddress(phase: 1, stage: 1),
+            scenario: .inflation(InflationScenario(
+                title: "Timeout Test",
+                description: "Test timeout behavior.",
+                inflationRates: [0.03],
+                goods: []
+            )),
+            decision: .binary(
+                options: [
+                    DecisionOption(id: "A", label: "Invest", strategy: .directAsset("A")),
+                    DecisionOption(id: "B", label: "Hold", strategy: .directAsset("B"))
+                ],
+                timeoutSeconds: 0.3,
+                defaultDecision: .holdCash
             ),
+            simulation: StageSimulation(
+                seed: 1,
+                assets: [
+                    SimAssetConfig(id: "A", label: "Invest", drift: 0.05, volatility: 0.1, lessonRole: .preferred),
+                    SimAssetConfig(id: "B", label: "Hold", drift: 0.05, volatility: 0.1, lessonRole: .penalized)
+                ],
+                periodCount: 5,
+                replayCount: 1,
+                events: [],
+                lessonBias: 0.15
+            ),
+            scoring: .correctness,
             optimalDecision: .binary(choice: "A"),
-            timeoutSeconds: 0.3,
             insightText: "Inaction is a decision.",
             hintText: "Act or hold cash by default.",
             conceptExplanation: "Full concept."
@@ -251,20 +267,39 @@ final class EdgeCaseTests: XCTestCase {
     // MARK: - Helpers
 
     private func makeViewModel(timeoutSeconds: Double = 0) -> StageViewModel {
+        let decision: DecisionSpec = .binary(
+            options: [
+                DecisionOption(id: "A", label: "Invest", strategy: .directAsset("A")),
+                DecisionOption(id: "B", label: "Hold", strategy: .directAsset("B"))
+            ],
+            timeoutSeconds: timeoutSeconds > 0 ? timeoutSeconds : nil,
+            defaultDecision: .holdCash
+        )
+
         let definition = StageDefinition(
-            phase: 1, stage: 1,
-            scenarioTitle: "Edge Case Test",
-            scenarioDescription: "Test hints and explanations after failures.",
-            decisionType: .binary(optionA: "Invest", optionB: "Hold"),
-            simulationConfig: StageConfig(
-                seed: 999, assetCount: 2, timePeriods: 5,
-                volatility: 0.1, drift: 0.05,
-                eventInjections: [],
-                outcomeWeight: StageConfig.OutcomeWeight(
-                    correctStrategyWeight: 0.65, description: "test")
+            address: StageAddress(phase: 1, stage: 1),
+            scenario: .inflation(InflationScenario(
+                title: "Edge Case Test",
+                description: "Test hints and explanations after failures.",
+                inflationRates: [0.03],
+                goods: []
+            )),
+            decision: decision,
+            simulation: StageSimulation(
+                seed: 999,
+                assets: [
+                    // cash asset ensures .holdCash maps here (not to optimal "A"), making it suboptimal
+                    SimAssetConfig(id: "cash", label: "Cash", drift: -0.03, volatility: 0.01, lessonRole: .penalized, kind: .cash),
+                    SimAssetConfig(id: "A", label: "Invest", drift: 0.05, volatility: 0.1, lessonRole: .preferred),
+                    SimAssetConfig(id: "B", label: "Hold", drift: 0.05, volatility: 0.1, lessonRole: .neutral)
+                ],
+                periodCount: 5,
+                replayCount: 1,
+                events: [],
+                lessonBias: 0.15
             ),
+            scoring: .correctness,
             optimalDecision: .binary(choice: "A"),
-            timeoutSeconds: timeoutSeconds,
             insightText: "Insight text.",
             hintText: "Hint: think carefully.",
             conceptExplanation: "Full explanation of the concept."

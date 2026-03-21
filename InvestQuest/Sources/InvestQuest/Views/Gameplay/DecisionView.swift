@@ -89,15 +89,9 @@ struct DecisionView: View {
                     onSubmit(.binary(choice: option.id))
                 } label: {
                     HStack(alignment: .center, spacing: 14) {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(option.label)
-                                .font(.system(.headline, design: .rounded).weight(.semibold))
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            Text(index == 0 ? "Primary thesis" : "Alternate path")
-                                .font(.system(.caption, design: .rounded))
-                                .foregroundStyle(AppTheme.backgroundTop.opacity(0.72))
-                        }
-
+                        Text(option.label)
+                            .font(.system(.headline, design: .rounded).weight(.semibold))
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         Image(systemName: "arrow.up.right")
                             .font(.system(size: 14, weight: .bold))
                     }
@@ -105,7 +99,7 @@ struct DecisionView: View {
                 }
                 .buttonStyle(
                     QuestPrimaryButtonStyle(
-                        tint: index == 0 ? AppTheme.accent : AppTheme.highlight
+                        tint: AppTheme.accent
                     )
                 )
                 .accessibilityIdentifier("decision-\(option.id)")

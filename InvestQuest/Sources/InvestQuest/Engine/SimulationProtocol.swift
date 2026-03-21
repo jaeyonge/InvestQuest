@@ -96,31 +96,6 @@ struct StageSimulation: Codable, Equatable {
     let lessonBias: Double
 }
 
-// MARK: - Legacy Stage Configuration
-
-/// Legacy configuration retained so the existing phase definitions can be
-/// upgraded progressively while the runtime uses `StageSimulation`.
-struct StageConfig {
-    let seed: UInt64
-    let assetCount: Int
-    let timePeriods: Int
-    let volatility: Double
-    let drift: Double
-    let eventInjections: [EventInjection]
-    let outcomeWeight: OutcomeWeight
-
-    struct EventInjection {
-        let period: Int
-        let assetIndex: Int
-        let magnitudeFactor: Double
-    }
-
-    struct OutcomeWeight {
-        let correctStrategyWeight: Double
-        let description: String
-    }
-}
-
 // MARK: - Simulation Result
 
 struct AssetPriceHistory: Codable, Equatable, Identifiable {
@@ -155,6 +130,4 @@ struct SimulationResult: Codable, Equatable {
 
 protocol MarketSimulationEngineProtocol {
     func simulate(stage: StageSimulation) -> SimulationResult
-    func simulate(config: StageConfig) -> SimulationResult
-    func simulateBatch(config: StageConfig, count: Int) -> [SimulationResult]
 }

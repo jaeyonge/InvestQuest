@@ -3,29 +3,41 @@ import XCTest
 
 final class Phase6Tests: XCTestCase {
 
+    // MARK: - Helpers
+
+    private func eventMagnitude(_ event: SimulationEvent) -> Double {
+        switch event.kind {
+        case .multiplier(let f), .bankruptcy(let f): return f
+        default: return 1.0
+        }
+    }
+
+    private func eventTargets(_ event: SimulationEvent, assetID: String) -> Bool {
+        event.assetIDs?.contains(assetID) ?? false
+    }
+
     // MARK: - AC1: Stage 1 — All-in asset has crash; split asset does not crash as severely
 
     func testStage1_allInAssetHasCrashEvent() {
         let stage = Phase6StageDefinitions.stage1
-        let allInCrash = stage.simulationConfig.eventInjections.filter {
-            $0.assetIndex == 0
+        let allInCrash = stage.simulation.events.filter {
+            eventTargets($0, assetID: "all-in")
         }
         XCTAssertFalse(allInCrash.isEmpty,
-                       "Stage 1 all-in asset (index 0) must have at least one crash event injection")
-        let factor = allInCrash.first!.magnitudeFactor
+                       "Stage 1 all-in asset must have at least one crash event injection")
+        let factor = eventMagnitude(allInCrash.first!)
         XCTAssertLessThan(factor, 0.50,
                           "Stage 1 all-in crash factor must be severe (< 0.50)")
     }
 
     func testStage1_splitAssetDoesNotCrashAsSeverely() {
         let stage = Phase6StageDefinitions.stage1
-        // Asset index 1 (split/diversified) should have no crash event,
-        // or a much less severe one than asset 0.
-        let splitCrashes = stage.simulationConfig.eventInjections.filter {
-            $0.assetIndex == 1 && $0.magnitudeFactor < 0.50
+        // Split/diversified asset should have no crash event, or a much less severe one
+        let splitCrashes = stage.simulation.events.filter {
+            eventTargets($0, assetID: "split") && eventMagnitude($0) < 0.50
         }
         XCTAssertTrue(splitCrashes.isEmpty,
-                      "Stage 1 split asset (index 1) must not have a severe crash event")
+                      "Stage 1 split asset must not have a severe crash event")
     }
 
     func testStage1_binaryDecisionAndOptimalIsSplit() {
@@ -41,8 +53,8 @@ final class Phase6Tests: XCTestCase {
 
     func testStage1_simulationHasTenPeriods() {
         let stage = Phase6StageDefinitions.stage1
-        XCTAssertEqual(stage.simulationConfig.timePeriods, 10)
-        XCTAssertEqual(stage.simulationConfig.seed, 601)
+        XCTAssertEqual(stage.simulation.periodCount, 10)
+        XCTAssertEqual(stage.simulation.seed, 601)
     }
 
     // MARK: - AC2: Stage 2 — Description mentions variance/simulation
@@ -73,25 +85,25 @@ final class Phase6Tests: XCTestCase {
 
     func testStage3_bankruptcyFactorIsNearTotalLoss() {
         let stage = Phase6StageDefinitions.stage3
-        let bankruptcyEvents = stage.simulationConfig.eventInjections.filter {
-            $0.assetIndex == 0
+        let bankruptcyEvents = stage.simulation.events.filter {
+            eventTargets($0, assetID: "concentrated")
         }
         XCTAssertFalse(bankruptcyEvents.isEmpty,
-                       "Stage 3 must have a bankruptcy event for the concentrated asset (index 0)")
-        let factor = bankruptcyEvents.first!.magnitudeFactor
+                       "Stage 3 must have a bankruptcy event for the concentrated asset")
+        let factor = eventMagnitude(bankruptcyEvents.first!)
         XCTAssertLessThanOrEqual(factor, 0.05,
                                  "Stage 3 bankruptcy factor must be ≤ 0.05 (near total loss)")
     }
 
     func testStage3_diversifiedFundSurvivesBankruptcy() {
         let stage = Phase6StageDefinitions.stage3
-        // Diversified fund (asset 1) events must not be catastrophic
-        let diversifiedCrashes = stage.simulationConfig.eventInjections.filter {
-            $0.assetIndex == 1
+        // Diversified fund events must not be catastrophic
+        let diversifiedCrashes = stage.simulation.events.filter {
+            eventTargets($0, assetID: "diversified-fund")
         }
         // If there is an event for the diversified fund, it must be survivable (factor > 0.50)
         for event in diversifiedCrashes {
-            XCTAssertGreaterThan(event.magnitudeFactor, 0.50,
+            XCTAssertGreaterThan(eventMagnitude(event), 0.50,
                                  "Diversified fund must survive the bankruptcy event (factor > 0.50)")
         }
     }
@@ -121,20 +133,21 @@ final class Phase6Tests: XCTestCase {
 
     func testStage4_techSectorCrashEvent() {
         let stage = Phase6StageDefinitions.stage4
-        let techCrashes = stage.simulationConfig.eventInjections.filter {
-            $0.assetIndex == 0
+        // Tech stocks use IDs like "tech-a", "tech-b", etc.
+        let techCrashes = stage.simulation.events.filter {
+            ($0.assetIDs ?? []).contains(where: { $0.hasPrefix("tech-") })
         }
         XCTAssertFalse(techCrashes.isEmpty,
-                       "Stage 4 must have a crash event for the tech stocks asset (index 0)")
-        let factor = techCrashes.first!.magnitudeFactor
+                       "Stage 4 must have a crash event for the tech stocks")
+        let factor = eventMagnitude(techCrashes.first!)
         XCTAssertLessThan(factor, 0.70,
                           "Stage 4 tech crash must be significant (factor < 0.70)")
     }
 
     func testStage4_trulyDiversifiedHasNoCrashEvent() {
         let stage = Phase6StageDefinitions.stage4
-        let diversifiedCrashes = stage.simulationConfig.eventInjections.filter {
-            $0.assetIndex == 1 && $0.magnitudeFactor < 0.70
+        let diversifiedCrashes = stage.simulation.events.filter {
+            eventTargets($0, assetID: "diversified") && eventMagnitude($0) < 0.70
         }
         XCTAssertTrue(diversifiedCrashes.isEmpty,
                       "Stage 4 truly diversified portfolio must not have a severe crash event")
@@ -203,7 +216,9 @@ final class Phase6Tests: XCTestCase {
     }
 
     func testAllStages_allHaveBinaryDecision() {
-        for stage in Phase6StageDefinitions.all {
+        // Stage 4 uses ranking (reveals false diversification via portfolio comparison), not binary
+        let binaryStages = Phase6StageDefinitions.all.filter { $0.stage != 4 }
+        for stage in binaryStages {
             guard TestDataFactory.binaryOptions(from: stage) != nil else {
                 XCTFail("Phase 6 Stage \(stage.stage) must use binary decision type")
                 return
@@ -224,7 +239,7 @@ final class Phase6Tests: XCTestCase {
         let engine = MarketSimulationEngine()
         let start = Date()
         for stage in Phase6StageDefinitions.all {
-            _ = engine.simulate(config: stage.simulationConfig)
+            _ = engine.simulate(stage: stage.simulation)
         }
         let elapsed = Date().timeIntervalSince(start)
         XCTAssertLessThan(elapsed, 1.0,

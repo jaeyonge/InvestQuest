@@ -3,25 +3,38 @@ import XCTest
 
 final class Phase5Tests: XCTestCase {
 
+    // MARK: - Helpers
+
+    private func eventMagnitude(_ event: SimulationEvent) -> Double {
+        switch event.kind {
+        case .multiplier(let f), .bankruptcy(let f): return f
+        default: return 1.0
+        }
+    }
+
+    private func eventTargets(_ event: SimulationEvent, assetID: String) -> Bool {
+        event.assetIDs?.contains(assetID) ?? false
+    }
+
     // MARK: - AC1: Stage 1 — single asset with drop event after peak; optimal = sell before drop
 
     func testStage1_singleAssetWithDropEvent() {
         let stage = Phase5StageDefinitions.stage1
         XCTAssertEqual(stage.phase, 5)
         XCTAssertEqual(stage.stage, 1)
-        XCTAssertEqual(stage.simulationConfig.assetCount, 1, "Stage 1 has a single asset")
-        XCTAssertEqual(stage.simulationConfig.timePeriods, 15)
-        XCTAssertEqual(stage.simulationConfig.seed, 501)
+        XCTAssertEqual(stage.simulation.assets.count, 1, "Stage 1 has a single asset")
+        XCTAssertEqual(stage.simulation.periodCount, 15)
+        XCTAssertEqual(stage.simulation.seed, 501)
     }
 
     func testStage1_hasDropEventAfterPeak() {
         let stage = Phase5StageDefinitions.stage1
-        let injections = stage.simulationConfig.eventInjections
-        XCTAssertGreaterThan(injections.count, 0, "Stage 1 must have at least one event injection")
-        let dropEvent = injections.first { $0.magnitudeFactor < 1.0 }
-        XCTAssertNotNil(dropEvent, "Stage 1 must have a drop event (magnitudeFactor < 1.0)")
+        let events = stage.simulation.events
+        XCTAssertGreaterThan(events.count, 0, "Stage 1 must have at least one event injection")
+        let dropEvent = events.first { eventMagnitude($0) < 1.0 }
+        XCTAssertNotNil(dropEvent, "Stage 1 must have a drop event (magnitude < 1.0)")
         if let drop = dropEvent {
-            XCTAssertLessThan(drop.magnitudeFactor, 0.70,
+            XCTAssertLessThan(eventMagnitude(drop), 0.70,
                               "Stage 1 drop event must be significant (factor < 0.70)")
             XCTAssertGreaterThan(drop.period, 5,
                                  "Drop must occur after the asset has had time to rise (period > 5)")
@@ -47,20 +60,20 @@ final class Phase5Tests: XCTestCase {
 
     func testStage1_positiveDrift_thenDrop() {
         let stage = Phase5StageDefinitions.stage1
-        XCTAssertGreaterThan(stage.simulationConfig.drift, 0,
+        XCTAssertGreaterThan(stage.simulation.assets.first?.drift ?? 0, 0,
                              "Asset must have positive drift (rises before the drop)")
-        let hasDropEvent = stage.simulationConfig.eventInjections.contains {
-            $0.magnitudeFactor < 1.0 && $0.assetIndex == 0
+        let hasDropEvent = stage.simulation.events.contains {
+            eventTargets($0, assetID: "core") && eventMagnitude($0) < 1.0
         }
-        XCTAssertTrue(hasDropEvent, "Asset 0 must have a drop event injection")
+        XCTAssertTrue(hasDropEvent, "Core asset must have a drop event injection")
     }
 
     // MARK: - AC2: Stage 2 — 5 assets, mix of winners/losers, disposition effect in insightText
 
     func testStage2_fiveAssets() {
         let stage = Phase5StageDefinitions.stage2
-        XCTAssertEqual(stage.simulationConfig.assetCount, 5, "Stage 2 must have 5 assets")
-        XCTAssertEqual(stage.simulationConfig.seed, 502)
+        XCTAssertEqual(stage.simulation.assets.count, 5, "Stage 2 must have 5 assets")
+        XCTAssertEqual(stage.simulation.seed, 502)
     }
 
     func testStage2_multiAssetRankingDecisionType() {
@@ -73,9 +86,9 @@ final class Phase5Tests: XCTestCase {
 
     func testStage2_hasWinnersAndLosers() {
         let stage = Phase5StageDefinitions.stage2
-        let injections = stage.simulationConfig.eventInjections
-        let winners = injections.filter { $0.magnitudeFactor > 1.0 }
-        let losers = injections.filter { $0.magnitudeFactor < 1.0 }
+        let events = stage.simulation.events
+        let winners = events.filter { eventMagnitude($0) > 1.0 }
+        let losers = events.filter { eventMagnitude($0) < 1.0 }
         XCTAssertGreaterThanOrEqual(winners.count, 2, "Stage 2 must have at least 2 winner events")
         XCTAssertGreaterThanOrEqual(losers.count, 2, "Stage 2 must have at least 2 loser events")
     }
@@ -131,24 +144,24 @@ final class Phase5Tests: XCTestCase {
 
     func testStage3_stopLossAssetIsProtected() {
         let stage = Phase5StageDefinitions.stage3
-        let injections = stage.simulationConfig.eventInjections
-        // Asset 0 (with stop-loss) must have a smaller magnitude drop than asset 1 (without)
-        let asset0Event = injections.first { $0.assetIndex == 0 }
-        let asset1Event = injections.first { $0.assetIndex == 1 }
-        XCTAssertNotNil(asset0Event, "Asset 0 (with stop-loss) must have an event injection")
-        XCTAssertNotNil(asset1Event, "Asset 1 (without stop-loss) must have an event injection")
-        if let a0 = asset0Event, let a1 = asset1Event {
-            XCTAssertGreaterThan(a0.magnitudeFactor, a1.magnitudeFactor,
-                                 "Stop-loss asset (0) must suffer less than unprotected asset (1)")
-            XCTAssertLessThan(a1.magnitudeFactor, 0.50,
+        let events = stage.simulation.events
+        // Asset A (with stop-loss) must have a smaller magnitude drop than asset B (without)
+        let assetAEvent = events.first { eventTargets($0, assetID: "A") }
+        let assetBEvent = events.first { eventTargets($0, assetID: "B") }
+        XCTAssertNotNil(assetAEvent, "Asset A (with stop-loss) must have an event injection")
+        XCTAssertNotNil(assetBEvent, "Asset B (without stop-loss) must have an event injection")
+        if let a0 = assetAEvent, let a1 = assetBEvent {
+            XCTAssertGreaterThan(eventMagnitude(a0), eventMagnitude(a1),
+                                 "Stop-loss asset (A) must suffer less than unprotected asset (B)")
+            XCTAssertLessThan(eventMagnitude(a1), 0.50,
                               "Without stop-loss, asset must experience catastrophic drop (< 50%)")
         }
     }
 
     func testStage3_twoAssets() {
         let stage = Phase5StageDefinitions.stage3
-        XCTAssertEqual(stage.simulationConfig.assetCount, 2)
-        XCTAssertEqual(stage.simulationConfig.seed, 503)
+        XCTAssertEqual(stage.simulation.assets.count, 2)
+        XCTAssertEqual(stage.simulation.seed, 503)
     }
 
     func testStage3_scenarioDescription_mentionsStopLoss() {
@@ -162,25 +175,25 @@ final class Phase5Tests: XCTestCase {
 
     func testStage4_hasSevereDropEvent() {
         let stage = Phase5StageDefinitions.stage4
-        let injections = stage.simulationConfig.eventInjections
-        let severeDrops = injections.filter { $0.magnitudeFactor <= 0.60 }
+        let events = stage.simulation.events
+        let severeDrops = events.filter { eventMagnitude($0) <= 0.60 }
         XCTAssertGreaterThan(severeDrops.count, 0,
                              "Stage 4 must have a severe drop event (factor ≤ 0.60, i.e., -40%)")
         if let drop = severeDrops.first {
-            XCTAssertEqual(drop.magnitudeFactor, 0.60, accuracy: 0.01,
+            XCTAssertEqual(eventMagnitude(drop), 0.60, accuracy: 0.01,
                            "Stage 4 drop must be approximately -40% (factor = 0.60)")
         }
     }
 
     func testStage4_hasPartialRecoveryEvent() {
         let stage = Phase5StageDefinitions.stage4
-        let injections = stage.simulationConfig.eventInjections
-        let recoveryEvents = injections.filter { $0.magnitudeFactor > 1.0 }
+        let events = stage.simulation.events
+        let recoveryEvents = events.filter { eventMagnitude($0) > 1.0 }
         XCTAssertGreaterThan(recoveryEvents.count, 0,
                              "Stage 4 must have a partial recovery event (ambiguous signal)")
         if let recovery = recoveryEvents.first {
             // Recovery is partial — not enough to fully recover, so factor should be < 1.5
-            XCTAssertLessThan(recovery.magnitudeFactor, 1.50,
+            XCTAssertLessThan(eventMagnitude(recovery), 1.50,
                               "Recovery must be partial/ambiguous, not a full recovery")
         }
     }
@@ -195,10 +208,10 @@ final class Phase5Tests: XCTestCase {
 
     func testStage4_singleAsset_longerHorizon() {
         let stage = Phase5StageDefinitions.stage4
-        XCTAssertEqual(stage.simulationConfig.assetCount, 1)
-        XCTAssertGreaterThanOrEqual(stage.simulationConfig.timePeriods, 18,
+        XCTAssertEqual(stage.simulation.assets.count, 1)
+        XCTAssertGreaterThanOrEqual(stage.simulation.periodCount, 18,
                                     "Stage 4 must have a longer time horizon to show recovery ambiguity")
-        XCTAssertEqual(stage.simulationConfig.seed, 504)
+        XCTAssertEqual(stage.simulation.seed, 504)
     }
 
     func testStage4_scenarioDescription_mentionsLoss() {
@@ -266,7 +279,7 @@ final class Phase5Tests: XCTestCase {
         let engine = MarketSimulationEngine()
         let start = Date()
         for stage in Phase5StageDefinitions.all {
-            _ = engine.simulate(config: stage.simulationConfig)
+            _ = engine.simulate(stage: stage.simulation)
         }
         let elapsed = Date().timeIntervalSince(start)
         XCTAssertLessThan(elapsed, 1.0,

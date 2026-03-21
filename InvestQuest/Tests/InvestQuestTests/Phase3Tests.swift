@@ -5,11 +5,20 @@ final class Phase3Tests: XCTestCase {
 
     let engine = MarketSimulationEngine()
 
+    // MARK: - Helpers
+
+    private func eventMagnitude(_ event: SimulationEvent) -> Double {
+        switch event.kind {
+        case .multiplier(let f), .bankruptcy(let f): return f
+        default: return 1.0
+        }
+    }
+
     // MARK: - AC1: Stage 1 has 3 assets (Safe/Medium/Risky), description mentions probability distributions visually
 
     func testStage1_threeAssets() {
         let stage = Phase3StageDefinitions.stage1
-        XCTAssertEqual(stage.simulationConfig.assetCount, 3,
+        XCTAssertEqual(stage.simulation.assets.count, 3,
                        "Stage 1 must have 3 assets (Safe/Medium/Risky)")
     }
 
@@ -45,12 +54,22 @@ final class Phase3Tests: XCTestCase {
         let stage = Phase3StageDefinitions.stage1
         let batchCount = 10
 
-        // Run 10 simulations using sequential seeds (as simulateBatch does)
-        let results = engine.simulateBatch(config: stage.simulationConfig, count: batchCount)
+        // Run 10 simulations using sequential seeds
+        let sim = stage.simulation
+        let results = (0..<batchCount).map { i in
+            engine.simulate(stage: StageSimulation(
+                seed: sim.seed + UInt64(i),
+                assets: sim.assets,
+                periodCount: sim.periodCount,
+                replayCount: sim.replayCount,
+                events: sim.events,
+                lessonBias: sim.lessonBias
+            ))
+        }
         XCTAssertEqual(results.count, batchCount, "Must produce exactly 10 simulation results")
 
         // Verify all three assets show variance across the 10 runs (outcome spread is tangible)
-        for assetIdx in 0..<stage.simulationConfig.assetCount {
+        for assetIdx in 0..<stage.simulation.assets.count {
             let finals = results.map { $0.assetHistories[assetIdx].prices.last! }
             let spread = (finals.max() ?? 0) - (finals.min() ?? 0)
             XCTAssertGreaterThan(spread, 0,
@@ -59,9 +78,9 @@ final class Phase3Tests: XCTestCase {
 
         // Verify each result has all 3 asset histories with the expected number of price points
         for result in results {
-            XCTAssertEqual(result.assetHistories.count, stage.simulationConfig.assetCount)
+            XCTAssertEqual(result.assetHistories.count, stage.simulation.assets.count)
             for history in result.assetHistories {
-                XCTAssertEqual(history.prices.count, stage.simulationConfig.timePeriods + 1)
+                XCTAssertEqual(history.prices.count, stage.simulation.periodCount + 1)
             }
         }
     }
@@ -97,25 +116,27 @@ final class Phase3Tests: XCTestCase {
     }
 
     func testStage2_differentSeedFromStage1() {
-        XCTAssertNotEqual(Phase3StageDefinitions.stage1.simulationConfig.seed,
-                          Phase3StageDefinitions.stage2.simulationConfig.seed,
+        XCTAssertNotEqual(Phase3StageDefinitions.stage1.simulation.seed,
+                          Phase3StageDefinitions.stage2.simulation.seed,
                           "Stage 2 must use a different seed from Stage 1")
-        XCTAssertEqual(Phase3StageDefinitions.stage2.simulationConfig.seed, 302)
+        XCTAssertEqual(Phase3StageDefinitions.stage2.simulation.seed, 302)
     }
 
     // MARK: - AC4: Stage 3 has hidden risk — event injection at period 7, factor 0.30, on one asset
 
     func testStage3_hiddenRiskEventInjection() {
         let stage = Phase3StageDefinitions.stage3
-        XCTAssertGreaterThan(stage.simulationConfig.eventInjections.count, 0,
+        XCTAssertGreaterThan(stage.simulation.events.count, 0,
                              "Stage 3 must have at least one event injection (tail risk)")
 
-        let tailRiskEvent = stage.simulationConfig.eventInjections.first(where: {
-            $0.period == 7 && $0.assetIndex == 2
+        let tailRiskEvent = stage.simulation.events.first(where: {
+            $0.period == 7 && ($0.assetIDs?.contains("Gamma Fund") ?? false)
         })
-        XCTAssertNotNil(tailRiskEvent, "Stage 3 must inject tail risk at period 7 on asset index 2 (Gamma Fund)")
-        XCTAssertEqual(tailRiskEvent?.magnitudeFactor ?? 0, 0.30, accuracy: 0.01,
-                       "Tail risk event must have magnitudeFactor of 0.30")
+        XCTAssertNotNil(tailRiskEvent, "Stage 3 must inject tail risk at period 7 on Gamma Fund")
+        if let event = tailRiskEvent {
+            XCTAssertEqual(eventMagnitude(event), 0.30, accuracy: 0.01,
+                           "Tail risk event must have magnitude of 0.30")
+        }
     }
 
     func testStage3_multiAssetRanking_threeFunds() {
@@ -148,8 +169,8 @@ final class Phase3Tests: XCTestCase {
 
     func testStage3_simulationShowsGammaCollapse() {
         let stage = Phase3StageDefinitions.stage3
-        let result = engine.simulate(config: stage.simulationConfig)
-        // Gamma is asset index 2; with magnitudeFactor 0.30 at period 7 it should end below start
+        let result = engine.simulate(stage: stage.simulation)
+        // Gamma is asset index 2; with magnitude 0.30 at period 7 it should end below start
         let gammaHistory = result.assetHistories[2]
         let priceAtPeriod7 = gammaHistory.prices[7]
         let priceAtPeriod6 = gammaHistory.prices[6]
@@ -163,13 +184,15 @@ final class Phase3Tests: XCTestCase {
     func testStage4_scamTrap_guaranteedFundCollapse() {
         let stage = Phase3StageDefinitions.stage4
         // Must have an event injection that nearly wipes out the guaranteed fund
-        let collapseEvent = stage.simulationConfig.eventInjections.first(where: {
-            $0.assetIndex == 0 && $0.magnitudeFactor <= 0.10
+        let collapseEvent = stage.simulation.events.first(where: {
+            ($0.assetIDs?.contains("scam") ?? false) && eventMagnitude($0) <= 0.10
         })
         XCTAssertNotNil(collapseEvent,
-                        "Stage 4 must have a near-total-loss event on the Guaranteed fund (asset 0)")
-        XCTAssertEqual(collapseEvent?.magnitudeFactor ?? 1.0, 0.05, accuracy: 0.01,
-                       "Collapse event must reduce Guaranteed fund to ~5% of value")
+                        "Stage 4 must have a near-total-loss event on the Guaranteed fund (scam asset)")
+        if let event = collapseEvent {
+            XCTAssertEqual(eventMagnitude(event), 0.05, accuracy: 0.01,
+                           "Collapse event must reduce Guaranteed fund to ~5% of value")
+        }
     }
 
     func testStage4_binaryDecision_guaranteedVsIndex() {
@@ -199,7 +222,7 @@ final class Phase3Tests: XCTestCase {
 
     func testStage4_simulationShowsGuaranteedFundCollapse() {
         let stage = Phase3StageDefinitions.stage4
-        let result = engine.simulate(config: stage.simulationConfig)
+        let result = engine.simulate(stage: stage.simulation)
         // Asset 0 is the Guaranteed fund; event at period 5 should devastate it
         let guaranteedHistory = result.assetHistories[0]
         let finalPrice = guaranteedHistory.prices.last!
@@ -263,7 +286,7 @@ final class Phase3Tests: XCTestCase {
     func testPerformance_allStagesUnder1Second() {
         let start = Date()
         for stage in Phase3StageDefinitions.all {
-            _ = engine.simulate(config: stage.simulationConfig)
+            _ = engine.simulate(stage: stage.simulation)
         }
         let elapsed = Date().timeIntervalSince(start)
         XCTAssertLessThan(elapsed, 1.0,

@@ -132,9 +132,9 @@ final class CoreUITests: XCTestCase {
         // Verified structurally: PriceLineShape is a Shape (no pinch gesture recognizers)
         // This test confirms the simulation produces data the chart can display
         let engine = MarketSimulationEngine()
-        let result = engine.simulate(config: Phase1StageDefinitions.stage1.simulationConfig)
+        let result = engine.simulate(stage: Phase1StageDefinitions.stage1.simulation)
         XCTAssertEqual(result.assetHistories.count,
-                       Phase1StageDefinitions.stage1.simulationConfig.assetCount,
+                       Phase1StageDefinitions.stage1.simulation.assets.count,
                        "Chart data source must produce correct number of asset histories")
     }
 

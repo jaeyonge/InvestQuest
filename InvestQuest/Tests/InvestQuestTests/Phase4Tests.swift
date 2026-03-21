@@ -5,6 +5,15 @@ final class Phase4Tests: XCTestCase {
 
     let engine = MarketSimulationEngine()
 
+    // MARK: - Helpers
+
+    private func eventMagnitude(_ event: SimulationEvent) -> Double {
+        switch event.kind {
+        case .multiplier(let f), .bankruptcy(let f): return f
+        default: return 1.0
+        }
+    }
+
     // MARK: - AC1: Stage 1 — reinvest vs. withdraw over 20 years
 
     func testStage1_binaryDecision_reinvestVsWithdraw() {
@@ -28,7 +37,7 @@ final class Phase4Tests: XCTestCase {
 
     func testStage1_20YearHorizon() {
         let stage = Phase4StageDefinitions.stage1
-        XCTAssertGreaterThanOrEqual(stage.simulationConfig.timePeriods, 20,
+        XCTAssertGreaterThanOrEqual(stage.simulation.periodCount, 20,
                                     "Stage 1 must span at least 20 periods to show compounding")
     }
 
@@ -42,7 +51,7 @@ final class Phase4Tests: XCTestCase {
 
     func testStage1_twoAssets() {
         let stage = Phase4StageDefinitions.stage1
-        XCTAssertEqual(stage.simulationConfig.assetCount, 2,
+        XCTAssertEqual(stage.simulation.assets.count, 2,
                        "Stage 1 must have 2 assets (withdraw vs. reinvest)")
     }
 
@@ -69,7 +78,7 @@ final class Phase4Tests: XCTestCase {
 
     func testStage2_35YearHorizon() {
         let stage = Phase4StageDefinitions.stage2
-        XCTAssertGreaterThanOrEqual(stage.simulationConfig.timePeriods, 30,
+        XCTAssertGreaterThanOrEqual(stage.simulation.periodCount, 30,
                                     "Stage 2 must span at least 30 periods (age 25–60)")
     }
 
@@ -83,7 +92,7 @@ final class Phase4Tests: XCTestCase {
 
     func testStage2_hasEventInjectionForLateStart() {
         let stage = Phase4StageDefinitions.stage2
-        XCTAssertGreaterThan(stage.simulationConfig.eventInjections.count, 0,
+        XCTAssertGreaterThan(stage.simulation.events.count, 0,
                              "Stage 2 must inject an event to represent the late-starter's disadvantage")
     }
 
@@ -110,7 +119,7 @@ final class Phase4Tests: XCTestCase {
 
     func testStage3_30YearHorizon() {
         let stage = Phase4StageDefinitions.stage3
-        XCTAssertGreaterThanOrEqual(stage.simulationConfig.timePeriods, 30,
+        XCTAssertGreaterThanOrEqual(stage.simulation.periodCount, 30,
                                     "Stage 3 must span at least 30 periods to show fee compounding")
     }
 
@@ -122,11 +131,11 @@ final class Phase4Tests: XCTestCase {
 
     func testStage3_highFeeFundHasDragEvents() {
         let stage = Phase4StageDefinitions.stage3
-        let highFeeDragEvents = stage.simulationConfig.eventInjections.filter {
-            $0.assetIndex == 1 && $0.magnitudeFactor < 1.0
+        let highFeeDragEvents = stage.simulation.events.filter {
+            ($0.assetIDs?.contains("B") ?? false) && eventMagnitude($0) < 1.0
         }
         XCTAssertGreaterThan(highFeeDragEvents.count, 0,
-                             "Stage 3 must have negative event injections on the high-fee asset (index 1)")
+                             "Stage 3 must have negative event injections on the high-fee asset (B)")
     }
 
     // MARK: - AC4: Stage 4 — temptation to withdraw during -40% dip
@@ -152,16 +161,16 @@ final class Phase4Tests: XCTestCase {
 
     func testStage4_hasDipEventWith40PercentOrMoreLoss() {
         let stage = Phase4StageDefinitions.stage4
-        let dipEvent = stage.simulationConfig.eventInjections.first(where: {
-            $0.magnitudeFactor <= 0.65   // -40% dip or worse at some point
+        let dipEvent = stage.simulation.events.first(where: {
+            eventMagnitude($0) <= 0.65   // -40% dip or worse at some point
         })
         XCTAssertNotNil(dipEvent, "Stage 4 must inject a dip event with at least ~40% loss")
     }
 
     func testStage4_hasRecoveryEventAfterDip() {
         let stage = Phase4StageDefinitions.stage4
-        let recoveryEvent = stage.simulationConfig.eventInjections.first(where: {
-            $0.magnitudeFactor >= 1.30   // recovery boost
+        let recoveryEvent = stage.simulation.events.first(where: {
+            eventMagnitude($0) >= 1.30   // recovery boost
         })
         XCTAssertNotNil(recoveryEvent, "Stage 4 must have a recovery event after the dip")
     }
@@ -176,11 +185,12 @@ final class Phase4Tests: XCTestCase {
 
     func testStage4_simulationShowsRecovery() {
         let stage = Phase4StageDefinitions.stage4
-        let result = engine.simulate(config: stage.simulationConfig)
-        let history = result.assetHistories[0]
+        let result = engine.simulate(stage: stage.simulation)
+        // Asset index 1 is "Hold and Wait" (preferred) — the lesson is that holding through the dip recovers
+        let history = result.assetHistories[1]
         let finalPrice = history.prices.last!
         let startPrice = history.prices.first!
-        // After the dip and recovery, final price should exceed start price
+        // After the dip and recovery, the hold-through strategy should end above start price
         XCTAssertGreaterThan(finalPrice, startPrice,
                              "Stage 4 simulation must show final price above start price after recovery")
     }
@@ -242,7 +252,7 @@ final class Phase4Tests: XCTestCase {
     }
 
     func testAllStages_uniqueSeeds() {
-        let seeds = Phase4StageDefinitions.all.map { $0.simulationConfig.seed }
+        let seeds = Phase4StageDefinitions.all.map { $0.simulation.seed }
         XCTAssertEqual(Set(seeds).count, seeds.count, "All Phase 4 stages must use unique seeds")
     }
 
@@ -251,7 +261,7 @@ final class Phase4Tests: XCTestCase {
     func testPerformance_allStagesUnder1Second() {
         let start = Date()
         for stage in Phase4StageDefinitions.all {
-            _ = engine.simulate(config: stage.simulationConfig)
+            _ = engine.simulate(stage: stage.simulation)
         }
         let elapsed = Date().timeIntervalSince(start)
         XCTAssertLessThan(elapsed, 1.0,

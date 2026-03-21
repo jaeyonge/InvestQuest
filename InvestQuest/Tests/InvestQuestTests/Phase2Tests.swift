@@ -128,13 +128,13 @@ final class Phase2Tests: XCTestCase {
 
     func testStage5_timePeriods_multiRound() {
         let stage = Phase2StageDefinitions.stage5
-        XCTAssertGreaterThanOrEqual(stage.simulationConfig.timePeriods, 8,
+        XCTAssertGreaterThanOrEqual(stage.simulation.periodCount, 8,
                                     "Stage 5 must span multiple rounds (≥8)")
     }
 
     func testStage5_hasMidPointDip() {
         let stage = Phase2StageDefinitions.stage5
-        XCTAssertGreaterThan(stage.simulationConfig.eventInjections.count, 0,
+        XCTAssertGreaterThan(stage.simulation.events.count, 0,
                              "Stage 5 must inject a mid-point dip to tempt selling")
     }
 
@@ -176,7 +176,7 @@ final class Phase2Tests: XCTestCase {
         let engine = MarketSimulationEngine()
         let start = Date()
         for stage in Phase2StageDefinitions.all {
-            _ = engine.simulate(config: stage.simulationConfig)
+            _ = engine.simulate(stage: stage.simulation)
         }
         XCTAssertLessThan(Date().timeIntervalSince(start), 1.0)
     }

@@ -16,34 +16,49 @@ enum Phase2StageDefinitions {
     // MARK: - Stage 1: Fruit stand fundamentals (AC1, AC2)
 
     static let stage1 = StageDefinition(
-        phase: 2, stage: 1,
-        scenarioTitle: "The Fruit Stand",
-        scenarioDescription: """
-        Kim's Fruit Stand generates:
-        • Revenue: ₩50M/year
-        • Costs: ₩30M/year
-        • Profit: ₩20M/year
+        address: StageAddress(phase: 2, stage: 1),
+        scenario: .valuation(ValuationScenario(
+            title: "The Fruit Stand",
+            description: """
+            Kim's Fruit Stand generates:
+            • Revenue: ₩50M/year
+            • Costs: ₩30M/year
+            • Profit: ₩20M/year
 
-        The asking price is ₩140M.
-        A fair value estimate is roughly 10× annual profit.
+            The asking price is ₩140M.
+            A fair value estimate is roughly 10× annual profit.
 
-        Is the asking price a good deal?
-        """,
-        decisionType: .binary(optionA: "Buy (Good Deal)", optionB: "Pass (Overpriced)"),
-        simulationConfig: StageConfig(
-            seed: 201,
-            assetCount: 1,
-            timePeriods: 5,
-            volatility: 0.1,
-            drift: 0.05,           // value investor wins by buying undervalued
-            eventInjections: [],
-            outcomeWeight: StageConfig.OutcomeWeight(
-                correctStrategyWeight: 0.70,
-                description: "buy-undervalued"
-            )
+            Is the asking price a good deal?
+            """,
+            opportunities: [Phase2OpportunityFactory.fruitStand()]
+        )),
+        decision: .valuation(
+            options: [
+                DecisionOption(id: "buy", label: "Buy (Good Deal)", strategy: .directAsset("asset0")),
+                DecisionOption(id: "pass", label: "Pass (Overpriced)", strategy: .cash)
+            ],
+            timeoutSeconds: nil,
+            defaultDecision: .holdCash
         ),
+        simulation: StageSimulation(
+            seed: 201,
+            assets: [
+                SimAssetConfig(
+                    id: "asset0",
+                    label: "Kim's Fruit Stand",
+                    drift: 0.05,
+                    volatility: 0.10,
+                    lessonRole: .preferred,
+                    kind: .business
+                )
+            ],
+            periodCount: 5,
+            replayCount: 1,
+            events: [],
+            lessonBias: 0.20
+        ),
+        scoring: .valuationError(targetValue: 200_000_000),
         optimalDecision: .binary(choice: "A"),   // asking 140M, value = 200M → undervalued
-        timeoutSeconds: 30,
         insightText: "The asking price was ₩140M but the intrinsic value (10× profit) was ₩200M. You were buying at a 30% discount. That's the core skill: price vs. value.",
         hintText: "Calculate: 10 × annual profit = estimated intrinsic value. Compare to asking price.",
         conceptExplanation: conceptCardText
@@ -52,34 +67,49 @@ enum Phase2StageDefinitions {
     // MARK: - Stage 2: Rank multiple businesses by value (AC1, AC2)
 
     static let stage2 = StageDefinition(
-        phase: 2, stage: 2,
-        scenarioTitle: "Business Ranking",
-        scenarioDescription: """
-        Rank these four businesses from best value to worst:
-        • Kim's Fruit Stand: Profit ₩20M, Price ₩140M
-        • Park's Bakery: Profit ₩20M, Price ₩180M
-        • Classic Books: Profit ₩2M, Price ₩15M
-        • Trendy Café: Profit ₩5M, Price ₩150M
+        address: StageAddress(phase: 2, stage: 2),
+        scenario: .valuation(ValuationScenario(
+            title: "Business Ranking",
+            description: """
+            Rank these four businesses from best value to worst:
+            • Kim's Fruit Stand: Profit ₩20M, Price ₩140M
+            • Park's Bakery: Profit ₩20M, Price ₩180M
+            • Classic Books: Profit ₩2M, Price ₩15M
+            • Trendy Café: Profit ₩5M, Price ₩150M
 
-        Best deal = lowest price-to-value ratio.
-        """,
-        decisionType: .multiAssetRanking(
-            assets: ["Kim's Fruit Stand", "Park's Bakery", "Classic Books", "Trendy Café"]
+            Best deal = lowest price-to-value ratio.
+            """,
+            opportunities: Phase2OpportunityFactory.allBusinesses()
+        )),
+        decision: .ranking(
+            assets: [
+                DecisionAsset(id: "Kim's Fruit Stand", label: "Kim's Fruit Stand"),
+                DecisionAsset(id: "Park's Bakery", label: "Park's Bakery"),
+                DecisionAsset(id: "Classic Books", label: "Classic Books"),
+                DecisionAsset(id: "Trendy Café", label: "Trendy Café")
+            ],
+            timeoutSeconds: nil,
+            defaultDecision: .holdCash
         ),
-        simulationConfig: StageConfig(
+        simulation: StageSimulation(
             seed: 202,
-            assetCount: 4,
-            timePeriods: 5,
-            volatility: 0.12,
-            drift: 0.05,
-            eventInjections: [],
-            outcomeWeight: StageConfig.OutcomeWeight(
-                correctStrategyWeight: 0.65,
-                description: "rank-by-price-to-value"
-            )
+            assets: [
+                SimAssetConfig(id: "Kim's Fruit Stand", label: "Kim's Fruit Stand",
+                               drift: 0.05, volatility: 0.12, lessonRole: .preferred, kind: .business),
+                SimAssetConfig(id: "Park's Bakery", label: "Park's Bakery",
+                               drift: 0.05, volatility: 0.12, lessonRole: .neutral, kind: .business),
+                SimAssetConfig(id: "Classic Books", label: "Classic Books",
+                               drift: 0.05, volatility: 0.12, lessonRole: .neutral, kind: .business),
+                SimAssetConfig(id: "Trendy Café", label: "Trendy Café",
+                               drift: 0.05, volatility: 0.12, lessonRole: .penalized, kind: .business)
+            ],
+            periodCount: 5,
+            replayCount: 1,
+            events: [],
+            lessonBias: 0.15
         ),
+        scoring: .rankingDistance,
         optimalDecision: .ranking(["Kim's Fruit Stand", "Classic Books", "Park's Bakery", "Trendy Café"]),
-        timeoutSeconds: 30,
         insightText: "Kim's Fruit Stand (P/E 7) was the best deal; Trendy Café (P/E 30) was the worst. Same metric — price-to-earnings — ranked them all.",
         hintText: "Divide price by profit for each. Lower = better value.",
         conceptExplanation: conceptCardText
@@ -88,37 +118,58 @@ enum Phase2StageDefinitions {
     // MARK: - Stage 3: Sentiment distorts price (AC3, AC4)
 
     static let stage3 = StageDefinition(
-        phase: 2, stage: 3,
-        scenarioTitle: "Hype vs. Fear",
-        scenarioDescription: """
-        Two businesses. Same fundamentals. Different market sentiment.
+        address: StageAddress(phase: 2, stage: 3),
+        scenario: .valuation(ValuationScenario(
+            title: "Hype vs. Fear",
+            description: """
+            Two businesses. Same fundamentals. Different market sentiment.
 
-        • TechBoom Inc: Profit ₩30M, Price ₩900M — 🔥 Extreme Hype
-        • StableGrocery: Profit ₩30M, Price ₩120M — 😨 Panic Selling
+            • TechBoom Inc: Profit ₩30M, Price ₩900M — 🔥 Extreme Hype
+            • StableGrocery: Profit ₩30M, Price ₩120M — 😨 Panic Selling
 
-        Both have the same intrinsic value (₩300M). Sentiment has distorted prices.
-        Which do you buy?
-        """,
-        decisionType: .binary(optionA: "TechBoom Inc", optionB: "StableGrocery"),
-        simulationConfig: StageConfig(
-            seed: 203,
-            assetCount: 2,
-            timePeriods: 8,
-            volatility: 0.25,
-            drift: 0.06,
-            eventInjections: [
-                // TechBoom corrects downward (hype fades)
-                StageConfig.EventInjection(period: 4, assetIndex: 0, magnitudeFactor: 0.5),
-                // StableGrocery recovers (fear fades)
-                StageConfig.EventInjection(period: 4, assetIndex: 1, magnitudeFactor: 1.6)
+            Both have the same intrinsic value (₩300M). Sentiment has distorted prices.
+            Which do you buy?
+            """,
+            opportunities: [Phase2OpportunityFactory.overpriced(), Phase2OpportunityFactory.fruitStand()]
+        )),
+        decision: .binary(
+            options: [
+                DecisionOption(id: "A", label: "TechBoom Inc", strategy: .directAsset("A")),
+                DecisionOption(id: "B", label: "StableGrocery", strategy: .directAsset("B"))
             ],
-            outcomeWeight: StageConfig.OutcomeWeight(
-                correctStrategyWeight: 0.75,
-                description: "buy-fear-not-hype"
-            )
+            timeoutSeconds: nil,
+            defaultDecision: .holdCash
         ),
+        simulation: StageSimulation(
+            seed: 203,
+            assets: [
+                SimAssetConfig(id: "A", label: "TechBoom Inc",
+                               drift: 0.05, volatility: 0.25, lessonRole: .penalized, kind: .sector),
+                SimAssetConfig(id: "B", label: "StableGrocery",
+                               drift: 0.05, volatility: 0.25, lessonRole: .preferred, kind: .business)
+            ],
+            periodCount: 8,
+            replayCount: 1,
+            events: [
+                SimulationEvent(
+                    id: "techboom-correction",
+                    period: 4,
+                    assetIDs: ["A"],
+                    kind: .multiplier(0.5),
+                    narrative: "Hype fades — TechBoom corrects sharply"
+                ),
+                SimulationEvent(
+                    id: "stable-recovery",
+                    period: 4,
+                    assetIDs: ["B"],
+                    kind: .multiplier(1.6),
+                    narrative: "Fear fades — StableGrocery recovers"
+                )
+            ],
+            lessonBias: 0.25
+        ),
+        scoring: .correctness,
         optimalDecision: .binary(choice: "B"),  // StableGrocery — undervalued due to fear
-        timeoutSeconds: 30,
         insightText: "StableGrocery was trading at 40% of intrinsic value due to fear. TechBoom was at 300% due to hype. Sentiment distorts price — but value reverts.",
         hintText: "Which one is trading far below its fundamental value?",
         conceptExplanation: conceptCardText
@@ -127,33 +178,48 @@ enum Phase2StageDefinitions {
     // MARK: - Stage 4: Hidden fundamentals — uncertainty (AC5)
 
     static let stage4 = StageDefinition(
-        phase: 2, stage: 4,
-        scenarioTitle: "Incomplete Information",
-        scenarioDescription: """
-        You're evaluating TechX Corp.
-        • Revenue: ₩200M/year
-        • Costs: [HIDDEN]
-        • Profit: [HIDDEN]
-        • Sentiment: 📈 Mild Optimism
-        • Market Price: ₩300M
+        address: StageAddress(phase: 2, stage: 4),
+        scenario: .valuation(ValuationScenario(
+            title: "Incomplete Information",
+            description: """
+            You're evaluating TechX Corp.
+            • Revenue: ₩200M/year
+            • Costs: [HIDDEN]
+            • Profit: [HIDDEN]
+            • Sentiment: 📈 Mild Optimism
+            • Market Price: ₩300M
 
-        You can only see revenue. Make your best estimate of fair value.
-        """,
-        decisionType: .binary(optionA: "Buy (Looks Cheap)", optionB: "Pass (Too Uncertain)"),
-        simulationConfig: StageConfig(
-            seed: 204,
-            assetCount: 1,
-            timePeriods: 6,
-            volatility: 0.30,      // higher variance due to uncertainty
-            drift: 0.03,
-            eventInjections: [],
-            outcomeWeight: StageConfig.OutcomeWeight(
-                correctStrategyWeight: 0.60,
-                description: "pass-when-uncertain"
-            )
+            You can only see revenue. Make your best estimate of fair value.
+            """,
+            opportunities: [Phase2OpportunityFactory.hiddenInfo()]
+        )),
+        decision: .binary(
+            options: [
+                DecisionOption(id: "A", label: "Buy (Looks Cheap)", strategy: .directAsset("asset0")),
+                DecisionOption(id: "B", label: "Pass (Too Uncertain)", strategy: .cash)
+            ],
+            timeoutSeconds: nil,
+            defaultDecision: .holdCash
         ),
+        simulation: StageSimulation(
+            seed: 204,
+            assets: [
+                SimAssetConfig(
+                    id: "asset0",
+                    label: "TechX Corp",
+                    drift: 0.03,
+                    volatility: 0.30,
+                    lessonRole: .neutral,
+                    kind: .sector
+                )
+            ],
+            periodCount: 6,
+            replayCount: 1,
+            events: [],
+            lessonBias: 0.10
+        ),
+        scoring: .correctness,
         optimalDecision: .binary(choice: "B"),  // pass when fundamentals hidden
-        timeoutSeconds: 30,
         insightText: "When you can't see costs or profit, you can't estimate value. Passing is a valid decision — and often the wisest one when information is incomplete.",
         hintText: "If costs are unknown, profit is unknown. If profit is unknown, value is unknown.",
         conceptExplanation: conceptCardText
@@ -162,34 +228,59 @@ enum Phase2StageDefinitions {
     // MARK: - Stage 5: Buy and hold through fluctuations (AC6)
 
     static let stage5 = StageDefinition(
-        phase: 2, stage: 5,
-        scenarioTitle: "Patience Pays",
-        scenarioDescription: """
-        You identified Park's Bakery as undervalued (₩180M, value ₩200M).
-        You buy. Now hold through 10 years of market noise.
-        The price will fluctuate — sometimes below what you paid.
-        Will you hold or sell when it dips?
-        """,
-        decisionType: .binary(optionA: "Hold (Stay the Course)", optionB: "Sell (Cut Losses)"),
-        simulationConfig: StageConfig(
-            seed: 205,
-            assetCount: 1,
-            timePeriods: 10,
-            volatility: 0.20,
-            drift: 0.08,           // fundamentals-driven growth
-            eventInjections: [
-                // Mid-point dip to tempt selling
-                StageConfig.EventInjection(period: 4, assetIndex: 0, magnitudeFactor: 0.75),
-                // Recovery confirms value
-                StageConfig.EventInjection(period: 7, assetIndex: 0, magnitudeFactor: 1.3)
+        address: StageAddress(phase: 2, stage: 5),
+        scenario: .valuation(ValuationScenario(
+            title: "Patience Pays",
+            description: """
+            You identified Park's Bakery as undervalued (₩180M, value ₩200M).
+            You buy. Now hold through 10 years of market noise.
+            The price will fluctuate — sometimes below what you paid.
+            Will you hold or sell when it dips?
+            """,
+            opportunities: [Phase2OpportunityFactory.fruitStand()]
+        )),
+        decision: .binary(
+            options: [
+                DecisionOption(id: "A", label: "Hold (Stay the Course)", strategy: .directAsset("asset0")),
+                DecisionOption(id: "B", label: "Sell (Cut Losses)", strategy: .cash)
             ],
-            outcomeWeight: StageConfig.OutcomeWeight(
-                correctStrategyWeight: 0.75,
-                description: "hold-through-dip"
-            )
+            timeoutSeconds: nil,
+            defaultDecision: .holdCash
         ),
+        simulation: StageSimulation(
+            seed: 205,
+            assets: [
+                SimAssetConfig(
+                    id: "asset0",
+                    label: "Park's Bakery",
+                    drift: 0.08,
+                    volatility: 0.20,
+                    lessonRole: .preferred,
+                    kind: .business
+                )
+            ],
+            periodCount: 10,
+            replayCount: 1,
+            events: [
+                SimulationEvent(
+                    id: "mid-dip",
+                    period: 4,
+                    assetIDs: ["asset0"],
+                    kind: .multiplier(0.75),
+                    narrative: "Mid-point dip to tempt selling"
+                ),
+                SimulationEvent(
+                    id: "value-recovery",
+                    period: 7,
+                    assetIDs: ["asset0"],
+                    kind: .multiplier(1.3),
+                    narrative: "Recovery confirms fundamental value"
+                )
+            ],
+            lessonBias: 0.25
+        ),
+        scoring: .correctness,
         optimalDecision: .binary(choice: "A"),  // hold
-        timeoutSeconds: 30,
         insightText: "Short-term price movements are noise. Long-term, value wins. Buying below intrinsic value and holding is the complete strategy.",
         hintText: "The fundamentals haven't changed. Only the price did.",
         conceptExplanation: conceptCardText

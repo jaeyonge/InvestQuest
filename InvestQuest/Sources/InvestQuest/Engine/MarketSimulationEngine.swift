@@ -59,34 +59,6 @@ final class MarketSimulationEngine: MarketSimulationEngineProtocol {
         return SimulationResult(runs: runs, durationSeconds: elapsed)
     }
 
-    func simulate(config: StageConfig) -> SimulationResult {
-        simulate(stage: StageSimulation.fromLegacy(
-            config: config,
-            phase: 0,
-            stage: 0,
-            assetIDs: (0..<config.assetCount).map { "asset\($0)" },
-            assetLabels: (0..<config.assetCount).map { "Asset \($0 + 1)" }
-        ))
-    }
-
-    // MARK: - simulateBatch
-
-    func simulateBatch(config: StageConfig, count: Int) -> [SimulationResult] {
-        (0..<count).map { i in
-            var cfg = config
-            cfg = StageConfig(
-                seed: config.seed + UInt64(i),
-                assetCount: config.assetCount,
-                timePeriods: config.timePeriods,
-                volatility: config.volatility,
-                drift: config.drift,
-                eventInjections: config.eventInjections,
-                outcomeWeight: config.outcomeWeight
-            )
-            return simulate(config: cfg)
-        }
-    }
-
     // MARK: - Private
 
     private func simulateRun(stage: StageSimulation, seed: UInt64) -> [AssetPriceHistory] {

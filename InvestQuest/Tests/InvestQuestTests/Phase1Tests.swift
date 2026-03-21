@@ -9,15 +9,15 @@ final class Phase1Tests: XCTestCase {
         let stage = Phase1StageDefinitions.stage1
         XCTAssertEqual(stage.phase, 1)
         XCTAssertEqual(stage.stage, 1)
-        XCTAssertEqual(stage.simulationConfig.assetCount, 1, "Stage 1 has cash only")
-        XCTAssertEqual(stage.simulationConfig.timePeriods, 10, "Stage 1 simulates 10 years")
-        XCTAssertLessThan(stage.simulationConfig.drift, 0, "Cash must have negative drift (inflation erosion)")
+        XCTAssertEqual(stage.simulation.assets.count, 1, "Stage 1 has cash only")
+        XCTAssertEqual(stage.simulation.periodCount, 10, "Stage 1 simulates 10 years")
+        XCTAssertLessThan(stage.simulation.assets.first?.drift ?? 0, 0, "Cash must have negative drift (inflation erosion)")
     }
 
     func testStage1_purchasingPowerDeclines() {
         let stage = Phase1StageDefinitions.stage1
         let engine = MarketSimulationEngine()
-        let result = engine.simulate(config: stage.simulationConfig)
+        let result = engine.simulate(stage: stage.simulation)
         let prices = result.assetHistories[0].prices
         let finalPrice = prices.last!
         let startPrice = prices.first!
@@ -70,7 +70,7 @@ final class Phase1Tests: XCTestCase {
 
     func testStage2_addsSavingsOption() {
         let stage = Phase1StageDefinitions.stage2
-        XCTAssertEqual(stage.simulationConfig.assetCount, 2, "Stage 2 has 2 assets")
+        XCTAssertEqual(stage.simulation.assets.count, 2, "Stage 2 has 2 assets")
         guard let (assets, _) = TestDataFactory.allocationOptions(from: stage) else {
             XCTFail("Stage 2 must use allocation input"); return
         }
@@ -82,8 +82,8 @@ final class Phase1Tests: XCTestCase {
 
     func testStage2_oneNewVariableVsStage1() {
         // Stage 1: 1 asset. Stage 2: 2 assets. Difference = 1.
-        let diff = Phase1StageDefinitions.stage2.simulationConfig.assetCount
-                 - Phase1StageDefinitions.stage1.simulationConfig.assetCount
+        let diff = Phase1StageDefinitions.stage2.simulation.assets.count
+                 - Phase1StageDefinitions.stage1.simulation.assets.count
         XCTAssertEqual(diff, 1, "Stage 2 introduces exactly 1 new variable (savings) vs Stage 1 (AC6)")
     }
 
@@ -91,7 +91,7 @@ final class Phase1Tests: XCTestCase {
 
     func testStage3_addsInflationTrackingAsset() {
         let stage = Phase1StageDefinitions.stage3
-        XCTAssertEqual(stage.simulationConfig.assetCount, 3, "Stage 3 has 3 assets")
+        XCTAssertEqual(stage.simulation.assets.count, 3, "Stage 3 has 3 assets")
         guard let (assets, _) = TestDataFactory.allocationOptions(from: stage) else {
             XCTFail("Stage 3 must use allocation input"); return
         }
@@ -103,8 +103,8 @@ final class Phase1Tests: XCTestCase {
     }
 
     func testStage3_oneNewVariableVsStage2() {
-        let diff = Phase1StageDefinitions.stage3.simulationConfig.assetCount
-                 - Phase1StageDefinitions.stage2.simulationConfig.assetCount
+        let diff = Phase1StageDefinitions.stage3.simulation.assets.count
+                 - Phase1StageDefinitions.stage2.simulation.assets.count
         XCTAssertEqual(diff, 1, "Stage 3 introduces exactly 1 new variable vs Stage 2 (AC6)")
     }
 
@@ -112,9 +112,9 @@ final class Phase1Tests: XCTestCase {
 
     func testStage4_varyingInflationViaEvents() {
         let stage = Phase1StageDefinitions.stage4
-        XCTAssertGreaterThan(stage.simulationConfig.eventInjections.count, 0,
+        XCTAssertGreaterThan(stage.simulation.events.count, 0,
                              "Stage 4 must inject events to simulate varying inflation")
-        XCTAssertEqual(stage.simulationConfig.timePeriods, 4,
+        XCTAssertEqual(stage.simulation.periodCount, 4,
                        "Stage 4 has multiple time periods")
     }
 
@@ -130,9 +130,9 @@ final class Phase1Tests: XCTestCase {
         // Stage 4 adds short-horizon active reallocation around an inflation spike.
         let s3 = Phase1StageDefinitions.stage3
         let s4 = Phase1StageDefinitions.stage4
-        XCTAssertGreaterThan(s4.simulationConfig.eventInjections.count, s3.simulationConfig.eventInjections.count,
+        XCTAssertGreaterThan(s4.simulation.events.count, s3.simulation.events.count,
                              "Stage 4 must add the inflation-shock event structure")
-        XCTAssertLessThan(s4.simulationConfig.timePeriods, s3.simulationConfig.timePeriods,
+        XCTAssertLessThan(s4.simulation.periodCount, s3.simulation.periodCount,
                           "Stage 4 must switch to a short active-reallocation horizon")
         guard case .timed(let underlying, _) = s4.decisionType,
               case .allocationSlider = underlying else {
@@ -145,7 +145,7 @@ final class Phase1Tests: XCTestCase {
 
     func testStage5_thirtyYearHorizon() {
         let stage = Phase1StageDefinitions.stage5
-        XCTAssertEqual(stage.simulationConfig.timePeriods, 30,
+        XCTAssertEqual(stage.simulation.periodCount, 30,
                        "Stage 5 must simulate 30 years")
     }
 
@@ -164,7 +164,7 @@ final class Phase1Tests: XCTestCase {
         let engine = MarketSimulationEngine()
         // Run batch; with negative drift on asset 0 (cash), asset 1 should do better
         // (Stage 5 uses seed 105; assets differ by the PRNG sequence)
-        let result = engine.simulate(config: stage.simulationConfig)
+        let result = engine.simulate(stage: stage.simulation)
         XCTAssertEqual(result.assetHistories.count, 2)
         // Both histories must have 31 data points (30 periods + t=0)
         XCTAssertEqual(result.assetHistories[0].prices.count, 31)
@@ -212,7 +212,7 @@ final class Phase1Tests: XCTestCase {
         let engine = MarketSimulationEngine()
         let start = Date()
         for stage in Phase1StageDefinitions.all {
-            _ = engine.simulate(config: stage.simulationConfig)
+            _ = engine.simulate(stage: stage.simulation)
         }
         let elapsed = Date().timeIntervalSince(start)
         XCTAssertLessThan(elapsed, 1.0,

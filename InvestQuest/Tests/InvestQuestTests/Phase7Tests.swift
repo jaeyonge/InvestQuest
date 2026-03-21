@@ -5,6 +5,19 @@ final class Phase7Tests: XCTestCase {
 
     let engine = MarketSimulationEngine()
 
+    // MARK: - Helpers
+
+    private func eventMagnitude(_ event: SimulationEvent) -> Double {
+        switch event.kind {
+        case .multiplier(let f), .bankruptcy(let f): return f
+        default: return 1.0
+        }
+    }
+
+    private func eventTargets(_ event: SimulationEvent, assetID: String) -> Bool {
+        event.assetIDs?.contains(assetID) ?? false
+    }
+
     // MARK: - AC1: Stage 1 — time-pressure / timed decision
 
     func testStage1_timedDecision() {
@@ -55,11 +68,11 @@ final class Phase7Tests: XCTestCase {
 
     func testStage1_hotAssetCrashesAfterHype() {
         let stage = Phase7StageDefinitions.stage1
-        // Asset 0 (buy-now) should have a negative event; asset 1 (research) should be stable
-        let crashEvent = stage.simulationConfig.eventInjections.first(where: {
-            $0.assetIndex == 0 && $0.magnitudeFactor < 0.80
+        // Asset A (buy-now) should have a negative event
+        let crashEvent = stage.simulation.events.first(where: {
+            eventTargets($0, assetID: "A") && eventMagnitude($0) < 0.80
         })
-        XCTAssertNotNil(crashEvent, "Stage 1 must have a crash event on the 'Buy Now' asset (index 0)")
+        XCTAssertNotNil(crashEvent, "Stage 1 must have a crash event on the 'Buy Now' asset (A)")
     }
 
     // MARK: - AC2: Stage 2 — FOMO leaderboard, hot tip is a trap
@@ -89,15 +102,15 @@ final class Phase7Tests: XCTestCase {
 
     func testStage2_leaderboardAssetSpikesThenCollapses() {
         let stage = Phase7StageDefinitions.stage2
-        // Must have a spike event followed by a collapse on the hot asset (index 0)
-        let spikeEvent = stage.simulationConfig.eventInjections.first(where: {
-            $0.assetIndex == 0 && $0.magnitudeFactor >= 2.0
+        // Must have a spike event followed by a collapse on the hot asset (fomo)
+        let spikeEvent = stage.simulation.events.first(where: {
+            eventTargets($0, assetID: "fomo") && eventMagnitude($0) >= 2.0
         })
-        let collapseEvent = stage.simulationConfig.eventInjections.first(where: {
-            $0.assetIndex == 0 && $0.magnitudeFactor <= 0.20
+        let collapseEvent = stage.simulation.events.first(where: {
+            eventTargets($0, assetID: "fomo") && eventMagnitude($0) <= 0.20
         })
-        XCTAssertNotNil(spikeEvent, "Stage 2 hot asset must spike (magnitudeFactor ≥ 2.0)")
-        XCTAssertNotNil(collapseEvent, "Stage 2 hot asset must collapse (magnitudeFactor ≤ 0.20)")
+        XCTAssertNotNil(spikeEvent, "Stage 2 hot asset must spike (magnitude ≥ 2.0)")
+        XCTAssertNotNil(collapseEvent, "Stage 2 hot asset must collapse (magnitude ≤ 0.20)")
     }
 
     func testStage2_descriptionMentionsFOMOOrLeaderboard() {
@@ -111,7 +124,7 @@ final class Phase7Tests: XCTestCase {
 
     func testStage2_simulationShowsLeaderboardAssetCollapses() {
         let stage = Phase7StageDefinitions.stage2
-        let result = engine.simulate(config: stage.simulationConfig)
+        let result = engine.simulate(stage: stage.simulation)
         let hotAsset = result.assetHistories[0]
         let finalPrice = hotAsset.prices.last!
         let startPrice = hotAsset.prices.first!
@@ -140,10 +153,10 @@ final class Phase7Tests: XCTestCase {
 
     func testStage3_optimalDecision_isPass() {
         let stage = Phase7StageDefinitions.stage3
-        guard case .binary(let choice) = stage.optimalDecision else {
-            XCTFail("Stage 3 optimal decision must be binary"); return
+        guard case .valuation(_, let actionID) = stage.optimalDecision else {
+            XCTFail("Stage 3 optimal decision must be valuation"); return
         }
-        XCTAssertEqual(choice, "B", "Optimal is Pass — asset is still massively overvalued vs intrinsic (B)")
+        XCTAssertEqual(actionID, "pass", "Optimal is Pass — asset is still massively overvalued vs intrinsic value")
     }
 
     func testStage3_descriptionMentionsAnchorPrice() {
@@ -165,8 +178,8 @@ final class Phase7Tests: XCTestCase {
 
     func testStage3_hasFurtherDeclineEvent() {
         let stage = Phase7StageDefinitions.stage3
-        let declineEvent = stage.simulationConfig.eventInjections.first(where: {
-            $0.magnitudeFactor < 1.0
+        let declineEvent = stage.simulation.events.first(where: {
+            eventMagnitude($0) < 1.0
         })
         XCTAssertNotNil(declineEvent,
                         "Stage 3 must have a further decline event (market correcting to fundamental value)")
@@ -187,10 +200,10 @@ final class Phase7Tests: XCTestCase {
 
     func testStage4_optimalDecision_isReview() {
         let stage = Phase7StageDefinitions.stage4
-        guard case .binary(let choice) = stage.optimalDecision else {
-            XCTFail("Stage 4 optimal decision must be binary"); return
+        guard case .review(let actionID) = stage.optimalDecision else {
+            XCTFail("Stage 4 optimal decision must be review"); return
         }
-        XCTAssertEqual(choice, "A", "Optimal is Review My Biases (A)")
+        XCTAssertEqual(actionID, "review", "Optimal is Review My Decisions")
     }
 
     func testStage4_descriptionMentionsAllFourBiases() {
@@ -276,7 +289,7 @@ final class Phase7Tests: XCTestCase {
     }
 
     func testAllStages_uniqueSeeds() {
-        let seeds = Phase7StageDefinitions.all.map { $0.simulationConfig.seed }
+        let seeds = Phase7StageDefinitions.all.map { $0.simulation.seed }
         XCTAssertEqual(Set(seeds).count, seeds.count, "All Phase 7 stages must use unique seeds")
     }
 
@@ -285,7 +298,7 @@ final class Phase7Tests: XCTestCase {
     func testPerformance_allStagesUnder1Second() {
         let start = Date()
         for stage in Phase7StageDefinitions.all {
-            _ = engine.simulate(config: stage.simulationConfig)
+            _ = engine.simulate(stage: stage.simulation)
         }
         let elapsed = Date().timeIntervalSince(start)
         XCTAssertLessThan(elapsed, 1.0,

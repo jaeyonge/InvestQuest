@@ -11,20 +11,76 @@ final class StageViewModelTests: XCTestCase {
         decisionType: DecisionType = .binary(optionA: "Invest", optionB: "Hold Cash"),
         optimalDecision: PlayerDecision = .binary(choice: "A")
     ) -> StageDefinition {
-        StageDefinition(
-            phase: 1, stage: 1,
-            scenarioTitle: "Test Stage",
-            scenarioDescription: "This is a test scenario with full description.",
-            decisionType: decisionType,
-            simulationConfig: StageConfig(
-                seed: 42, assetCount: 2, timePeriods: 10,
-                volatility: 0.2, drift: 0.07,
-                eventInjections: [],
-                outcomeWeight: StageConfig.OutcomeWeight(
-                    correctStrategyWeight: 0.65, description: "invest")
+        // Build a DecisionSpec from the DecisionType
+        let decision: DecisionSpec
+        let assets = [
+            SimAssetConfig(id: "A", label: "Invest", drift: 0.07, volatility: 0.2, lessonRole: .preferred),
+            SimAssetConfig(id: "B", label: "Hold Cash", drift: 0.07, volatility: 0.2, lessonRole: .penalized)
+        ]
+
+        switch decisionType {
+        case .binary(let optionA, let optionB):
+            decision = .binary(
+                options: [
+                    DecisionOption(id: "A", label: optionA, strategy: .directAsset("A")),
+                    DecisionOption(id: "B", label: optionB, strategy: .directAsset("B"))
+                ],
+                timeoutSeconds: timeoutSeconds > 0 ? timeoutSeconds : nil,
+                defaultDecision: .holdCash
+            )
+        case .allocationSlider(let assetNames, let totalBudget):
+            decision = .allocation(
+                assets: assetNames.map { DecisionAsset(id: $0, label: $0) },
+                totalBudget: totalBudget,
+                timeoutSeconds: timeoutSeconds > 0 ? timeoutSeconds : nil,
+                defaultDecision: .holdCash
+            )
+        case .multiAssetRanking(let assetNames):
+            decision = .ranking(
+                assets: assetNames.map { DecisionAsset(id: $0, label: $0) },
+                timeoutSeconds: timeoutSeconds > 0 ? timeoutSeconds : nil,
+                defaultDecision: .holdCash
+            )
+        case .timed(let underlying, let timeout):
+            switch underlying {
+            case .binary(let optionA, let optionB):
+                decision = .binary(
+                    options: [
+                        DecisionOption(id: "A", label: optionA, strategy: .directAsset("A")),
+                        DecisionOption(id: "B", label: optionB, strategy: .directAsset("B"))
+                    ],
+                    timeoutSeconds: timeout,
+                    defaultDecision: .holdCash
+                )
+            case .allocationSlider(let assetNames, let totalBudget):
+                decision = .allocation(
+                    assets: assetNames.map { DecisionAsset(id: $0, label: $0) },
+                    totalBudget: totalBudget,
+                    timeoutSeconds: timeout,
+                    defaultDecision: .holdCash
+                )
+            }
+        }
+
+        return StageDefinition(
+            address: StageAddress(phase: 1, stage: 1),
+            scenario: .inflation(InflationScenario(
+                title: "Test Stage",
+                description: "This is a test scenario with full description.",
+                inflationRates: [0.03],
+                goods: []
+            )),
+            decision: decision,
+            simulation: StageSimulation(
+                seed: 42,
+                assets: assets,
+                periodCount: 10,
+                replayCount: 1,
+                events: [],
+                lessonBias: 0.15
             ),
+            scoring: .correctness,
             optimalDecision: optimalDecision,
-            timeoutSeconds: timeoutSeconds,
             insightText: "This is the insight text explaining the concept.",
             hintText: "Hint: consider the long-term trend.",
             conceptExplanation: "Full explanation: inflation erodes purchasing power."

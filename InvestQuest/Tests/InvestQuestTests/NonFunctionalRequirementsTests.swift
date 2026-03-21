@@ -20,7 +20,7 @@ final class NonFunctionalRequirementsTests: XCTestCase {
         )
         let start = Date()
         for stage in allStages {
-            _ = engine.simulate(config: stage.simulationConfig)
+            _ = engine.simulate(stage: stage.simulation)
         }
         let elapsed = Date().timeIntervalSince(start)
         XCTAssertLessThan(elapsed, 1.0,
@@ -31,16 +31,25 @@ final class NonFunctionalRequirementsTests: XCTestCase {
         // Any individual stage must simulate much faster than 1 second
         let stage = Phase6StageDefinitions.stage2  // largest batch: 20 simulations
         let start = Date()
-        _ = engine.simulate(config: stage.simulationConfig)
+        _ = engine.simulate(stage: stage.simulation)
         let elapsed = Date().timeIntervalSince(start)
         XCTAssertLessThan(elapsed, 0.1, "Single stage must simulate in < 100ms")
     }
 
     func testBatchSimulation_20Runs_under1Second() {
         // 20x batch (used in Phase 6 Stage 2) must complete within 1 second
-        let config = Phase6StageDefinitions.stage2.simulationConfig
+        let sim = Phase6StageDefinitions.stage2.simulation
         let start = Date()
-        _ = engine.simulateBatch(config: config, count: 20)
+        for i in 0..<20 {
+            _ = engine.simulate(stage: StageSimulation(
+                seed: sim.seed + UInt64(i),
+                assets: sim.assets,
+                periodCount: sim.periodCount,
+                replayCount: sim.replayCount,
+                events: sim.events,
+                lessonBias: sim.lessonBias
+            ))
+        }
         let elapsed = Date().timeIntervalSince(start)
         XCTAssertLessThan(elapsed, 1.0, "20-run batch simulation must complete in < 1 second")
     }
@@ -51,8 +60,7 @@ final class NonFunctionalRequirementsTests: XCTestCase {
         // Engine is purely computational — no URLSession, no network dependencies
         // Verified structurally: MarketSimulationEngine uses only Foundation math functions
         // This test confirms simulate() returns a result without network access
-        let config = Phase1StageDefinitions.stage1.simulationConfig
-        let result = engine.simulate(config: config)
+        let result = engine.simulate(stage: Phase1StageDefinitions.stage1.simulation)
         XCTAssertGreaterThan(result.assetHistories.count, 0,
                              "Simulation must produce results without any network access")
     }
