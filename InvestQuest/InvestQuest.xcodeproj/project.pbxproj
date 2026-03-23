@@ -10,6 +10,7 @@
 		008BA7ECB905B7D7CA46FE3C /* Phase5Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E339D4660DAAFC0011FDDC1D /* Phase5Tests.swift */; };
 		00D9BB2D2F0F5CFFC8461C6C /* Phase6Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EECF488AA057891E4C60BAD5 /* Phase6Tests.swift */; };
 		041EC1BC5117BF4142CF29DA /* TestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9268A31D73F864DC2DA1038 /* TestSupport.swift */; };
+		0A73194E3CF4FD1E7A5A0E01 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0A73194D3CF4FD1E7A5A0E01 /* Assets.xcassets */; };
 		1A21B80A99DECF16C5817A1F /* CoreUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 358AE33B66872C286DDDB615 /* CoreUITests.swift */; };
 		2174AC1AB7DD115667574F99 /* Phase5StageDefinitions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8C84D0EC6614CA77314E455 /* Phase5StageDefinitions.swift */; };
 		224BC4FA21277535DC223E6C /* SimulationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFBF02A021672920709D3234 /* SimulationView.swift */; };
@@ -36,6 +37,7 @@
 		8B1998F87C0018EE6A31A518 /* StageCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = F147C5E3E6049DB5A722FA62 /* StageCatalog.swift */; };
 		92D68F6A3B11BDBFDD94FBD3 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6260A87E9E7A682755D1BBA1 /* AppTheme.swift */; };
 		95ECE21153F64575C142A898 /* StageRecapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E3FFE6C9889844257AF352F /* StageRecapView.swift */; };
+		A1E40DE4B4F54C13A1A1F001 /* KoreanLocalization.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E40DE5B4F54C13A1A1F001 /* KoreanLocalization.swift */; };
 		A6FFA3F915A0103EBF53E24E /* SimulationProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7365AD069F957FD7EEAF3F49 /* SimulationProtocol.swift */; };
 		A84C8591D0AD3DA988122FBB /* GameProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0DBCB1B62809D55B5CCC1B5 /* GameProgress.swift */; };
 		AEAF1D99384B3C64A8F33572 /* Phase4Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCD889D454E727E8C5023CAD /* Phase4Tests.swift */; };
@@ -79,9 +81,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		00D14803D69F70C54BDBB2C1 /* InvestQuest.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = InvestQuest.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		00D14803D69F70C54BDBB2C1 /* InvestQuest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = InvestQuest.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		022352584450697B8CD24DF3 /* InsightCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightCardView.swift; sourceTree = "<group>"; };
 		06F00A5CE37F9A6E26A6B4FC /* InvestQuestTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = InvestQuestTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		0A73194D3CF4FD1E7A5A0E01 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		0C45B90F4AFB67F30229B171 /* PhaseSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhaseSummaryView.swift; sourceTree = "<group>"; };
 		0DB0DA10FEEFA9FD1ACDF88E /* Phase3StageDefinitions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Phase3StageDefinitions.swift; sourceTree = "<group>"; };
 		1BA31CF9F63DFC5700AE5761 /* AppViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppViewModel.swift; sourceTree = "<group>"; };
@@ -107,6 +110,7 @@
 		8E3FFE6C9889844257AF352F /* StageRecapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageRecapView.swift; sourceTree = "<group>"; };
 		9C835B2DA09058261FE12839 /* Phase7Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Phase7Tests.swift; sourceTree = "<group>"; };
 		9D1381389EF57E6B5E9EC9C3 /* Phase7StageDefinitions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Phase7StageDefinitions.swift; sourceTree = "<group>"; };
+		A1E40DE5B4F54C13A1A1F001 /* KoreanLocalization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KoreanLocalization.swift; sourceTree = "<group>"; };
 		A5D27519EC33A75C59B6EAD7 /* StageContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageContainerView.swift; sourceTree = "<group>"; };
 		A8C84D0EC6614CA77314E455 /* Phase5StageDefinitions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Phase5StageDefinitions.swift; sourceTree = "<group>"; };
 		AC299FF9C333F56A42FA509D /* GameProgressServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameProgressServiceTests.swift; sourceTree = "<group>"; };
@@ -248,6 +252,14 @@
 			path = InvestQuestTests;
 			sourceTree = "<group>";
 		};
+		0A73194C3CF4FD1E7A5A0E01 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				0A73194D3CF4FD1E7A5A0E01 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
 		63096E19CFAA9DFAF5AD4BEC /* InvestQuest */ = {
 			isa = PBXGroup;
 			children = (
@@ -256,6 +268,7 @@
 				52493EAEDE7BE9F67FCDE028 /* Models */,
 				158BBDF6F3BEF53074222B1E /* Phases */,
 				6D9EC133796D89F5A5FD1116 /* Progression */,
+				0A73194C3CF4FD1E7A5A0E01 /* Resources */,
 				7693AB60F67C8F0194D0FFB1 /* Services */,
 				E8D0FBE28B6569142FF1F71D /* Theme */,
 				90F1A7867615D264A8328440 /* ViewModels */,
@@ -345,6 +358,7 @@
 			isa = PBXGroup;
 			children = (
 				8D646CF05B20E8E5666F410E /* AppRuntimeSupport.swift */,
+				A1E40DE5B4F54C13A1A1F001 /* KoreanLocalization.swift */,
 				2438DEBC10968E2619F530BD /* ContentView.swift */,
 				52C94E1806F1869D6D62CE96 /* Info.plist */,
 				2E41074C5475D7E80A84DBFB /* InvestQuestApp.swift */,
@@ -400,6 +414,7 @@
 			buildConfigurationList = D5CD33B673BE2E93A29BE0D0 /* Build configuration list for PBXNativeTarget "InvestQuest" */;
 			buildPhases = (
 				E823897E24280299457D248D /* Sources */,
+				0A73194F3CF4FD1E7A5A0E01 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -458,7 +473,6 @@
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
 					4C8BE9DF7A2137BB0F564E7E = {
-						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 					A43072F3B4E51067243D755E = {
@@ -486,6 +500,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		0A73194F3CF4FD1E7A5A0E01 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0A73194E3CF4FD1E7A5A0E01 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		01378676EE144C680DCF5B98 /* Sources */ = {
@@ -524,6 +549,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				EA8DEB840F4877FC890DF049 /* AppRuntimeSupport.swift in Sources */,
+				A1E40DE4B4F54C13A1A1F001 /* KoreanLocalization.swift in Sources */,
 				92D68F6A3B11BDBFDD94FBD3 /* AppTheme.swift in Sources */,
 				314688CF6C784D29C5BD57EB /* AppViewModel.swift in Sources */,
 				E08C01FE066D78378CE9B5FE /* BusinessFundamentals.swift in Sources */,
@@ -639,7 +665,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 7RHQAM6HLV;
 				INFOPLIST_FILE = Sources/InvestQuest/App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -659,7 +685,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 7RHQAM6HLV;
 				INFOPLIST_FILE = Sources/InvestQuest/App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (

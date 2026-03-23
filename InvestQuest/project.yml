@@ -18,6 +18,8 @@ targets:
     deploymentTarget: "17.0"
     sources:
       - Sources/InvestQuest
+    resources:
+      - Sources/InvestQuest/Resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.investquest.app
