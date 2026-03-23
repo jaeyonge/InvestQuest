@@ -1,20 +1,31 @@
 # macOS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
 
 # Xcode user data
 **/*.xcuserstate
 **/*.xcuserdata/
 **/*.xccheckout
 **/*.moved-aside
+**/*.hmap
+**/*.ipa
+**/*.xcarchive
+**/*.dSYM
+**/*.dSYM.zip
 
 # Build products
 DerivedData/
 build/
 TestResults/
+**/*.xcresult
 
 # Swift Package Manager
 .build/
-.swiftpm/
+.swiftpm/xcode/
 Packages/
 Package.resolved
 
