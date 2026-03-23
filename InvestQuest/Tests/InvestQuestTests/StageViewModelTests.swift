@@ -249,6 +249,25 @@ final class StageViewModelTests: XCTestCase {
         XCTAssertLessThanOrEqual(outcome.score, 100)
     }
 
+    func testPhase3Stage1_equalThirdsAllocationPasses() {
+        let vm = StageViewModel(definition: Phase3StageDefinitions.stage1)
+        vm.advanceFromBriefing()
+        vm.submitDecision(.allocation([
+            "Safe Asset": 1.0 / 3.0,
+            "Medium Asset": 1.0 / 3.0,
+            "Risky Asset": 1.0 / 3.0
+        ]))
+        vm.finishSimulation()
+
+        guard case .result(let outcome) = vm.flowState else {
+            XCTFail("Expected .result state")
+            return
+        }
+
+        XCTAssertTrue(outcome.passed, "Rounded equal-thirds allocation must pass Phase 3 Stage 1")
+        XCTAssertEqual(outcome.score, 100, "Displayed whole-percentage allocation should count as the correct answer")
+    }
+
     func testStarRating_thresholds() {
         XCTAssertEqual(StageOutcome.starRating(for: 80), 3)
         XCTAssertEqual(StageOutcome.starRating(for: 100), 3)

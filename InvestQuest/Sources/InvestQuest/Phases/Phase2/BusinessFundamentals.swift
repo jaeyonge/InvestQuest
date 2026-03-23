@@ -81,10 +81,44 @@ enum Phase2OpportunityFactory {
         )
     }
 
-    static func overpriced() -> Phase2Opportunity {
+    static func parkBakery() -> Phase2Opportunity {
+        Phase2Opportunity(
+            id: "bakery",
+            fundamentals: BusinessFundamentals(
+                id: "bakery",
+                businessName: "Park's Bakery",
+                revenue: 60_000_000,
+                costs: 40_000_000,
+                profit: 20_000_000,
+                isHidden: false,
+                hiddenFields: []
+            ),
+            marketPrice: 180_000_000,
+            sentimentIndicator: .neutral
+        )
+    }
+
+    static func classicBooks() -> Phase2Opportunity {
+        Phase2Opportunity(
+            id: "bookshop",
+            fundamentals: BusinessFundamentals(
+                id: "bookshop",
+                businessName: "Classic Books",
+                revenue: 30_000_000,
+                costs: 28_000_000,
+                profit: 2_000_000,
+                isHidden: false,
+                hiddenFields: []
+            ),
+            marketPrice: 15_000_000,
+            sentimentIndicator: .fear
+        )
+    }
+
+    static func trendyCafe() -> Phase2Opportunity {
         let biz = BusinessFundamentals(
             id: "overpriced-cafe",
-            businessName: "Trendy Café Co.",
+            businessName: "Trendy Café",
             revenue: 80_000_000, costs: 75_000_000, profit: 5_000_000,
             isHidden: false, hiddenFields: []
         )
@@ -93,6 +127,46 @@ enum Phase2OpportunityFactory {
             fundamentals: biz,
             marketPrice: biz.intrinsicValueEstimate * 3.0,  // massively overvalued — pass
             sentimentIndicator: .hype
+        )
+    }
+
+    static func overpriced() -> Phase2Opportunity {
+        trendyCafe()
+    }
+
+    static func techBoom() -> Phase2Opportunity {
+        let biz = BusinessFundamentals(
+            id: "techboom",
+            businessName: "TechBoom Inc",
+            revenue: 150_000_000,
+            costs: 120_000_000,
+            profit: 30_000_000,
+            isHidden: false,
+            hiddenFields: []
+        )
+        return Phase2Opportunity(
+            id: "techboom",
+            fundamentals: biz,
+            marketPrice: 900_000_000,
+            sentimentIndicator: .hype
+        )
+    }
+
+    static func stableGrocery() -> Phase2Opportunity {
+        let biz = BusinessFundamentals(
+            id: "stable-grocery",
+            businessName: "StableGrocery",
+            revenue: 150_000_000,
+            costs: 120_000_000,
+            profit: 30_000_000,
+            isHidden: false,
+            hiddenFields: []
+        )
+        return Phase2Opportunity(
+            id: "stable-grocery",
+            fundamentals: biz,
+            marketPrice: 120_000_000,
+            sentimentIndicator: .fear
         )
     }
 
@@ -111,25 +185,16 @@ enum Phase2OpportunityFactory {
         )
     }
 
-    static func allBusinesses() -> [Phase2Opportunity] {
+    static func rankingBusinesses() -> [Phase2Opportunity] {
         [
             fruitStand(),
-            Phase2Opportunity(
-                id: "bakery",
-                fundamentals: BusinessFundamentals(
-                    id: "bakery", businessName: "Park's Bakery",
-                    revenue: 60_000_000, costs: 40_000_000, profit: 20_000_000,
-                    isHidden: false, hiddenFields: []),
-                marketPrice: 180_000_000, sentimentIndicator: .neutral),
-            Phase2Opportunity(
-                id: "bookshop",
-                fundamentals: BusinessFundamentals(
-                    id: "bookshop", businessName: "Classic Books",
-                    revenue: 30_000_000, costs: 28_000_000, profit: 2_000_000,
-                    isHidden: false, hiddenFields: []),
-                marketPrice: 15_000_000, sentimentIndicator: .fear),
-            overpriced(),
-            hiddenInfo()
+            parkBakery(),
+            classicBooks(),
+            trendyCafe()
         ]
+    }
+
+    static func allBusinesses() -> [Phase2Opportunity] {
+        rankingBusinesses() + [hiddenInfo()]
     }
 }

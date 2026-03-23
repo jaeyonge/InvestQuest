@@ -48,6 +48,30 @@ final class Phase3Tests: XCTestCase {
                       "Description must mention risky asset")
     }
 
+    func testStage1_assetProfilesMatchScenarioDescription() {
+        let assets = Phase3StageDefinitions.stage1.simulation.assets
+        XCTAssertEqual(assets[0].drift, 0.03, accuracy: 0.0001)
+        XCTAssertEqual(assets[0].volatility, 0.05, accuracy: 0.0001)
+        XCTAssertEqual(assets[1].drift, 0.07, accuracy: 0.0001)
+        XCTAssertEqual(assets[1].volatility, 0.15, accuracy: 0.0001)
+        XCTAssertEqual(assets[2].drift, 0.07, accuracy: 0.0001)
+        XCTAssertEqual(assets[2].volatility, 0.35, accuracy: 0.0001)
+        XCTAssertTrue(assets.allSatisfy { $0.lessonRole == .neutral },
+                      "Stage 1 should present raw risk profiles without hidden lesson bias")
+        XCTAssertEqual(Phase3StageDefinitions.stage1.simulation.lessonBias, 0, accuracy: 0.0001)
+    }
+
+    func testStage1_seededReplay_isNotAllLosses() {
+        let stage = Phase3StageDefinitions.stage1
+        let result = engine.simulate(stage: stage.simulation)
+        let hasWinningAsset = result.assetHistories.contains { history in
+            guard let start = history.prices.first, let end = history.prices.last else { return false }
+            return end > start
+        }
+        XCTAssertTrue(hasWinningAsset,
+                      "The first seeded replay should not show every asset finishing below its start value")
+    }
+
     // MARK: - AC2: 10 simulations show variance difference — risky has wider spread than safe
 
     func testStage1_10xSimulation_riskyHasWiderSpreadThanSafe() {

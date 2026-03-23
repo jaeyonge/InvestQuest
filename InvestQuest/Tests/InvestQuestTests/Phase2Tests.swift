@@ -3,6 +3,13 @@ import XCTest
 
 final class Phase2Tests: XCTestCase {
 
+    private func valuationOpportunityNames(for stage: StageDefinition) -> [String] {
+        guard case .valuation(let scenario) = stage.scenario else {
+            return []
+        }
+        return scenario.opportunities.map(\.fundamentals.businessName)
+    }
+
     // MARK: - AC1 & AC2: Business fundamentals and separate market price
 
     func testStage1_fruitStandFundamentalsPresent() {
@@ -40,7 +47,7 @@ final class Phase2Tests: XCTestCase {
     }
 
     func testOpportunity_overpricedCafeIsOvervalued() {
-        let opp = Phase2OpportunityFactory.overpriced()
+        let opp = Phase2OpportunityFactory.trendyCafe()
         XCTAssertTrue(opp.isBuyingAboveValue,
                       "Trendy Café must be overvalued (market price > intrinsic)")
     }
@@ -61,6 +68,38 @@ final class Phase2Tests: XCTestCase {
             XCTFail("Stage 3 optimal decision must be binary"); return
         }
         XCTAssertEqual(choice, "B", "Optimal is StableGrocery — undervalued due to fear")
+    }
+
+    func testStage2_opportunityCards_matchRankingBusinesses() {
+        let stage = Phase2StageDefinitions.stage2
+        XCTAssertEqual(
+            valuationOpportunityNames(for: stage),
+            ["Kim's Fruit Stand", "Park's Bakery", "Classic Books", "Trendy Café"]
+        )
+    }
+
+    func testStage3_opportunityCards_matchScenarioBusinesses() {
+        let stage = Phase2StageDefinitions.stage3
+        XCTAssertEqual(
+            valuationOpportunityNames(for: stage),
+            ["TechBoom Inc", "StableGrocery"]
+        )
+    }
+
+    func testStage4_opportunityCard_matchesScenarioBusiness() {
+        let stage = Phase2StageDefinitions.stage4
+        XCTAssertEqual(
+            valuationOpportunityNames(for: stage),
+            ["TechX Corp."]
+        )
+    }
+
+    func testStage5_opportunityCard_matchesScenarioBusiness() {
+        let stage = Phase2StageDefinitions.stage5
+        XCTAssertEqual(
+            valuationOpportunityNames(for: stage),
+            ["Park's Bakery"]
+        )
     }
 
     // MARK: - AC4: Stage 3+ has sentiment indicators

@@ -407,3 +407,66 @@ struct StageOutcome: Equatable, Codable {
     }
 }
 
+enum AllocationMath {
+
+    static func roundedAllocation(_ allocation: [String: Double], assetIDs: [String]) -> [String: Double] {
+        roundedPercentages(allocation, assetIDs: assetIDs).mapValues { Double($0) / 100 }
+    }
+
+    static func roundedPercentages(_ allocation: [String: Double], assetIDs: [String]) -> [String: Int] {
+        let orderedIDs = orderedAssetIDs(assetIDs, extrasFrom: allocation)
+        guard !orderedIDs.isEmpty else { return [:] }
+
+        let normalized = normalizedAllocation(allocation, assetIDs: orderedIDs)
+        var percentages = orderedIDs.reduce(into: [String: Int]()) { partial, assetID in
+            let rawValue = (normalized[assetID] ?? 0) * 100
+            partial[assetID] = Int(floor(rawValue))
+        }
+
+        let rankedRemainders = orderedIDs.enumerated()
+            .map { index, assetID -> (assetID: String, remainder: Double, index: Int) in
+                let rawValue = (normalized[assetID] ?? 0) * 100
+                return (assetID, rawValue - floor(rawValue), index)
+            }
+            .sorted { lhs, rhs in
+                if abs(lhs.remainder - rhs.remainder) > 0.000_001 {
+                    return lhs.remainder > rhs.remainder
+                }
+                return lhs.index < rhs.index
+            }
+
+        var remaining = 100 - percentages.values.reduce(0, +)
+        for item in rankedRemainders where remaining > 0 {
+            percentages[item.assetID, default: 0] += 1
+            remaining -= 1
+        }
+
+        return percentages
+    }
+
+    static func matches(_ lhs: [String: Double], _ rhs: [String: Double], assetIDs: [String]) -> Bool {
+        let orderedIDs = orderedAssetIDs(assetIDs, extrasFrom: lhs.merging(rhs) { current, _ in current })
+        return roundedPercentages(lhs, assetIDs: orderedIDs) == roundedPercentages(rhs, assetIDs: orderedIDs)
+    }
+
+    private static func normalizedAllocation(_ allocation: [String: Double], assetIDs: [String]) -> [String: Double] {
+        let orderedIDs = orderedAssetIDs(assetIDs, extrasFrom: allocation)
+        let total = max(
+            orderedIDs.reduce(0.0) { partial, assetID in
+                partial + max(allocation[assetID] ?? 0, 0)
+            },
+            0.000_001
+        )
+
+        return orderedIDs.reduce(into: [String: Double]()) { partial, assetID in
+            partial[assetID] = max(allocation[assetID] ?? 0, 0) / total
+        }
+    }
+
+    private static func orderedAssetIDs(_ assetIDs: [String], extrasFrom allocation: [String: Double]) -> [String] {
+        let extras = allocation.keys
+            .filter { !assetIDs.contains($0) }
+            .sorted()
+        return assetIDs + extras
+    }
+}

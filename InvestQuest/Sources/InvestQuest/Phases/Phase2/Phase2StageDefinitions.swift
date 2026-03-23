@@ -79,7 +79,7 @@ enum Phase2StageDefinitions {
 
             Best deal = lowest price-to-value ratio.
             """,
-            opportunities: Phase2OpportunityFactory.allBusinesses()
+            opportunities: Phase2OpportunityFactory.rankingBusinesses()
         )),
         decision: .ranking(
             assets: [
@@ -130,7 +130,7 @@ enum Phase2StageDefinitions {
             Both have the same intrinsic value (₩300M). Sentiment has distorted prices.
             Which do you buy?
             """,
-            opportunities: [Phase2OpportunityFactory.overpriced(), Phase2OpportunityFactory.fruitStand()]
+            opportunities: [Phase2OpportunityFactory.techBoom(), Phase2OpportunityFactory.stableGrocery()]
         )),
         decision: .binary(
             options: [
@@ -237,7 +237,7 @@ enum Phase2StageDefinitions {
             The price will fluctuate — sometimes below what you paid.
             Will you hold or sell when it dips?
             """,
-            opportunities: [Phase2OpportunityFactory.fruitStand()]
+            opportunities: [Phase2OpportunityFactory.parkBakery()]
         )),
         decision: .binary(
             options: [

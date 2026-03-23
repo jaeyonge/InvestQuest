@@ -57,31 +57,31 @@ enum Phase3StageDefinitions {
                     id: "Safe Asset",
                     label: "Safe Asset",
                     drift: 0.03,
-                    volatility: 0.02,       // base 0.05 - 0.03 offset
-                    lessonRole: .penalized,
+                    volatility: 0.05,
+                    lessonRole: .neutral,
                     kind: .bond
                 ),
                 SimAssetConfig(
                     id: "Medium Asset",
                     label: "Medium Asset",
-                    drift: 0.03,
-                    volatility: 0.11,       // base 0.05 + 0.06 offset
-                    lessonRole: .preferred,
+                    drift: 0.07,
+                    volatility: 0.15,
+                    lessonRole: .neutral,
                     kind: .equity
                 ),
                 SimAssetConfig(
                     id: "Risky Asset",
                     label: "Risky Asset",
-                    drift: 0.03,
-                    volatility: 0.23,       // base 0.05 + 0.18 offset
-                    lessonRole: .penalized,
+                    drift: 0.07,
+                    volatility: 0.35,
+                    lessonRole: .neutral,
                     kind: .equity
                 )
             ],
             periodCount: 10,
             replayCount: 10,
             events: [],
-            lessonBias: 0.15            // correctStrategyWeight 0.65 - 0.5
+            lessonBias: 0
         ),
         scoring: .correctness,
         optimalDecision: .allocation([

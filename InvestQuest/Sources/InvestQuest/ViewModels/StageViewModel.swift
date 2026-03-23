@@ -301,7 +301,7 @@ final class StageViewModel: ObservableObject {
                 startValue: initialPortfolioValue
             )
         case .correctness:
-            return playerDecision == definition.optimalDecision ? 100 : max(20, StageOutcome.score(
+            return matchesOptimalDecision(playerDecision) ? 100 : max(20, StageOutcome.score(
                 portfolioFinal: portfolioFinal,
                 optimalFinal: optimalFinal,
                 startValue: initialPortfolioValue
@@ -359,6 +359,24 @@ final class StageViewModel: ObservableObject {
             return decision == definition.optimalDecision ? ["loss-aversion-resisted"] : ["loss-aversion"]
         default:
             return []
+        }
+    }
+
+    private func matchesOptimalDecision(_ playerDecision: PlayerDecision) -> Bool {
+        switch (playerDecision, definition.optimalDecision) {
+        case (.allocation(let playerAllocation), .allocation(let optimalAllocation)):
+            return AllocationMath.matches(playerAllocation, optimalAllocation, assetIDs: allocationAssetIDs)
+        default:
+            return playerDecision == definition.optimalDecision
+        }
+    }
+
+    private var allocationAssetIDs: [String] {
+        switch definition.decision {
+        case .allocation(let assets, _, _, _):
+            return assets.map(\.id)
+        default:
+            return definition.simulation.assets.map(\.id)
         }
     }
 
