@@ -37,18 +37,18 @@ struct IntroAnimationView: View {
                 }
 
                 VStack(spacing: 14) {
-                    Text("INVESTQUEST")
+                    Text("INVESTQUEST".ko)
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .tracking(2.4)
                         .foregroundStyle(AppTheme.accent)
 
-                    Text(Self.introMessage)
+                    Text(Self.introMessage.ko)
                         .font(.system(size: 34, weight: .bold, design: .rounded))
                         .foregroundStyle(AppTheme.textPrimary)
                         .multilineTextAlignment(.center)
                         .opacity(titleOpacity)
 
-                    Text(Self.introSubtitle)
+                    Text(Self.introSubtitle.ko)
                         .font(.system(.title3, design: .rounded))
                         .foregroundStyle(AppTheme.textSecondary)
                         .multilineTextAlignment(.center)
@@ -59,7 +59,7 @@ struct IntroAnimationView: View {
                 Spacer()
 
                 VStack(spacing: 16) {
-                    Text("A playable investing simulation about inflation, valuation, risk, and behavioral bias.")
+                    Text("A playable investing simulation about inflation, valuation, risk, and behavioral bias.".ko)
                         .font(.system(.footnote, design: .rounded))
                         .foregroundStyle(AppTheme.textMuted)
                         .multilineTextAlignment(.center)
@@ -69,7 +69,7 @@ struct IntroAnimationView: View {
                         hasCompleted = true
                         onComplete()
                     } label: {
-                        Text("Start")
+                        Text("Start".ko)
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(QuestPrimaryButtonStyle())

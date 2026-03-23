@@ -13,61 +13,51 @@ struct SimulationView: View {
     let assetNames: [String]
     let onFinish: () -> Void
 
-    private let animationInterval: Double = 0.05
+    @State private var isAdvanceControlPressed = false
+    @State private var advanceTask: Task<Void, Never>?
+
+    private let animationInterval: Double = 0.12
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 18) {
-                if let prices = viewModel.simulationPrices.first {
-                    simulationHeroCard(periodCount: prices.count)
-                }
+        GeometryReader { geometry in
+            let horizontalPadding = AppTheme.contentHorizontalPadding(for: geometry.size.width)
+            let topPadding = AppTheme.contentTopPadding(for: geometry.size.width)
+            let bottomPadding = AppTheme.contentBottomPadding(for: geometry.size.width)
 
-                if !viewModel.portfolioValues.isEmpty {
-                    portfolioSummaryCard
-                }
-
-                if viewModel.replayFinalValues.count > 1 {
-                    ReplaySummaryStrip(finalValues: viewModel.replayFinalValues)
-                }
-
-                if viewModel.currentPeriod >= (viewModel.simulationPrices.first?.count ?? 1) - 1 {
-                    Button(action: onFinish) {
-                        Text("See Results")
-                            .frame(maxWidth: .infinity)
+            ScrollView {
+                VStack(spacing: 18) {
+                    if let prices = viewModel.simulationPrices.first {
+                        simulationHeroCard(periodCount: prices.count)
                     }
-                    .buttonStyle(QuestPrimaryButtonStyle())
-                    .accessibilityIdentifier("see-results")
+
+                    if !viewModel.portfolioValues.isEmpty {
+                        portfolioSummaryCard
+                    }
+
+                    if viewModel.replayFinalValues.count > 1 {
+                        ReplaySummaryStrip(finalValues: viewModel.replayFinalValues)
+                    }
+
+                    if isSimulationComplete {
+                        Button(action: onFinish) {
+                            Text("See Results".ko)
+                                .multilineTextAlignment(.center)
+                        }
+                        .buttonStyle(QuestPrimaryButtonStyle())
+                        .accessibilityIdentifier("see-results")
+                    }
                 }
+                .questReadableContentFrame(in: geometry.size.width)
+                .padding(.horizontal, horizontalPadding)
+                .padding(.top, topPadding)
+                .padding(.bottom, bottomPadding)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
-            .padding(.bottom, 28)
+            .scrollClipDisabled()
         }
         .foregroundStyle(AppTheme.textPrimary)
         .accessibilityIdentifier("stage-simulation")
-        .task {
-            let count = viewModel.simulationPrices.first?.count ?? 0
-            let midpoint = (count - 1) / 2
-            for step in 0..<(count - 1) {
-                try? await Task.sleep(nanoseconds: UInt64(animationInterval * 1_000_000_000))
-                let prevPeriod = viewModel.currentPeriod
-                viewModel.advanceSimulationPeriod()
-                let newPeriod = viewModel.currentPeriod
-
-                let prices = viewModel.simulationPrices
-                let isCrash = prices.contains { history in
-                    guard newPeriod < history.count, prevPeriod < history.count, history[prevPeriod] > 0 else {
-                        return false
-                    }
-                    return history[newPeriod] / history[prevPeriod] < 0.70
-                }
-
-                if isCrash {
-                    HapticFeedbackService.shared.fireCrashEvent()
-                } else if step == midpoint {
-                    HapticFeedbackService.shared.fireMilestone()
-                }
-            }
+        .onDisappear {
+            stopAdvanceLoop()
         }
     }
 
@@ -79,23 +69,24 @@ struct SimulationView: View {
                 subtitle: "Watch the path unfold before you lock in the outcome."
             )
 
-            HStack(spacing: 12) {
-                QuestStatPill(
-                    label: "Period",
-                    value: "\(viewModel.currentPeriod)/\(max(periodCount - 1, 0))",
-                    accent: AppTheme.highlight
-                )
-                .accessibilityIdentifier("simulation-period-label")
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) {
+                    periodPill(periodCount: periodCount)
 
-                if let currentValue = currentPortfolioValue {
-                        QuestStatPill(
-                            label: "Portfolio",
-                            value: "₩\(Int(currentValue).formatted())",
-                            accent: currentChange >= 0 ? AppTheme.success : AppTheme.danger
-                        )
+                    if let currentValue = currentPortfolioValue {
+                        portfolioPill(currentValue: currentValue)
+                    }
+
+                    Spacer(minLength: 0)
                 }
 
-                Spacer(minLength: 0)
+                VStack(alignment: .leading, spacing: 10) {
+                    periodPill(periodCount: periodCount)
+
+                    if let currentValue = currentPortfolioValue {
+                        portfolioPill(currentValue: currentValue)
+                    }
+                }
             }
 
             ProgressView(
@@ -112,6 +103,8 @@ struct SimulationView: View {
             )
             .frame(height: 240)
 
+            holdToAdvanceControl
+
             if !assetNames.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 10) {
@@ -120,7 +113,7 @@ struct SimulationView: View {
                                 Circle()
                                     .fill(questChartColors[index % questChartColors.count])
                                     .frame(width: 8, height: 8)
-                                Text(name)
+                                Text(name.ko)
                                     .font(.system(.caption, design: .rounded).weight(.semibold))
                                     .foregroundStyle(AppTheme.textSecondary)
                             }
@@ -141,10 +134,10 @@ struct SimulationView: View {
         let pct = startValue > 0 ? currentChange / startValue * 100 : 0
 
         return VStack(alignment: .leading, spacing: 16) {
-            Text("Portfolio")
+            Text("Portfolio".ko)
                 .font(.system(.headline, design: .rounded).weight(.semibold))
 
-            HStack(spacing: 14) {
+            QuestAdaptiveMetricGrid {
                 QuestMetricCard(
                     label: "Current",
                     value: "₩\(Int(currentValue).formatted())",
@@ -162,6 +155,86 @@ struct SimulationView: View {
         .questCard(fill: AppTheme.surface.opacity(0.82))
     }
 
+    private var holdToAdvanceControl: some View {
+        let title: String
+        let subtitle: String
+        let tint: Color
+        let symbolName: String
+
+        if isSimulationComplete {
+            title = "Replay complete"
+            subtitle = "You can review the result now."
+            tint = AppTheme.success
+            symbolName = "checkmark.circle.fill"
+        } else if isAdvanceControlPressed {
+            title = "Release to pause chart"
+            subtitle = "The replay only advances while you keep pressing."
+            tint = AppTheme.highlight
+            symbolName = "pause.circle.fill"
+        } else {
+            title = "Press and hold to move chart"
+            subtitle = "The replay only advances while you keep pressing."
+            tint = AppTheme.accent
+            symbolName = "hand.tap.fill"
+        }
+
+        return HStack(spacing: 14) {
+            Image(systemName: symbolName)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(tint)
+                .frame(width: 34, height: 34)
+                .background(
+                    Circle()
+                        .fill(tint.opacity(0.16))
+                )
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title.ko)
+                    .font(.system(.headline, design: .rounded).weight(.semibold))
+                    .foregroundStyle(AppTheme.textPrimary)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text(subtitle.ko)
+                    .font(.system(.footnote, design: .rounded))
+                    .foregroundStyle(AppTheme.textSecondary)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 16)
+        .padding(.horizontal, 18)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(AppTheme.surfaceRaised.opacity(isAdvanceControlPressed ? 0.96 : 0.90))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(tint.opacity(0.24), lineWidth: 1)
+                )
+                .shadow(color: tint.opacity(isAdvanceControlPressed ? 0.18 : 0.08), radius: 16, x: 0, y: 10)
+        )
+        .scaleEffect(isAdvanceControlPressed ? 0.985 : 1)
+        .animation(.easeOut(duration: 0.16), value: isAdvanceControlPressed)
+        .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    startAdvanceLoop()
+                }
+                .onEnded { _ in
+                    stopAdvanceLoop()
+                }
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityLabel(Text(title.ko))
+        .accessibilityHint(Text(subtitle.ko))
+        .accessibilityIdentifier("hold-to-advance-simulation")
+    }
+
     private var currentPortfolioValue: Double? {
         guard !viewModel.portfolioValues.isEmpty else { return nil }
         let index = min(viewModel.currentPeriod, viewModel.portfolioValues.count - 1)
@@ -172,6 +245,86 @@ struct SimulationView: View {
         guard let currentValue = currentPortfolioValue else { return 0 }
         let startValue = viewModel.portfolioValues.first ?? currentValue
         return currentValue - startValue
+    }
+
+    private func periodPill(periodCount: Int) -> some View {
+        QuestStatPill(
+            label: "Period",
+            value: "\(viewModel.currentPeriod)/\(max(periodCount - 1, 0))",
+            accent: AppTheme.highlight
+        )
+        .accessibilityIdentifier("simulation-period-label")
+    }
+
+    private func portfolioPill(currentValue: Double) -> some View {
+        QuestStatPill(
+            label: "Portfolio",
+            value: "₩\(Int(currentValue).formatted())",
+            accent: currentChange >= 0 ? AppTheme.success : AppTheme.danger
+        )
+    }
+
+    private var maxSimulationPeriod: Int {
+        max((viewModel.simulationPrices.first?.count ?? 1) - 1, 0)
+    }
+
+    private var isSimulationComplete: Bool {
+        viewModel.currentPeriod >= maxSimulationPeriod
+    }
+
+    private func startAdvanceLoop() {
+        guard advanceTask == nil, !isSimulationComplete else { return }
+        isAdvanceControlPressed = true
+
+        advanceTask = Task {
+            while !Task.isCancelled {
+                let shouldContinue = await MainActor.run {
+                    advanceSimulationStep()
+                }
+                if !shouldContinue { break }
+
+                try? await Task.sleep(nanoseconds: UInt64(animationInterval * 1_000_000_000))
+                if Task.isCancelled { break }
+            }
+
+            await MainActor.run {
+                advanceTask = nil
+                isAdvanceControlPressed = false
+            }
+        }
+    }
+
+    private func stopAdvanceLoop() {
+        advanceTask?.cancel()
+        advanceTask = nil
+        isAdvanceControlPressed = false
+    }
+
+    private func advanceSimulationStep() -> Bool {
+        guard !isSimulationComplete else { return false }
+
+        let previousPeriod = viewModel.currentPeriod
+        viewModel.advanceSimulationPeriod()
+        let newPeriod = viewModel.currentPeriod
+
+        guard newPeriod > previousPeriod else { return false }
+
+        if isCrashTransition(from: previousPeriod, to: newPeriod) {
+            HapticFeedbackService.shared.fireCrashEvent()
+        } else {
+            HapticFeedbackService.shared.fireStep()
+        }
+
+        return !isSimulationComplete
+    }
+
+    private func isCrashTransition(from previousPeriod: Int, to newPeriod: Int) -> Bool {
+        viewModel.simulationPrices.contains { history in
+            guard newPeriod < history.count, previousPeriod < history.count, history[previousPeriod] > 0 else {
+                return false
+            }
+            return history[newPeriod] / history[previousPeriod] < 0.70
+        }
     }
 }
 
@@ -185,10 +338,10 @@ struct ReplaySummaryStrip: View {
         let high = sorted.last ?? 0
 
         VStack(alignment: .leading, spacing: 16) {
-            Text("Replay Range")
+            Text("Replay Range".ko)
                 .font(.system(.headline, design: .rounded).weight(.semibold))
 
-            HStack(spacing: 14) {
+            QuestAdaptiveMetricGrid {
                 replayValue(label: "Low", value: low, accent: AppTheme.danger)
                 replayValue(label: "Median", value: median, accent: AppTheme.accent)
                 replayValue(label: "High", value: high, accent: AppTheme.success)

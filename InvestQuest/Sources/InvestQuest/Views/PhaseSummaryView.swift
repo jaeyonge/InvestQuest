@@ -12,55 +12,63 @@ struct PhaseSummaryView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                QuestSectionHeader(
-                    eyebrow: "Phase \(viewModel.completedPhaseConfig.id) Complete",
-                    title: viewModel.completedPhaseConfig.concept,
-                    subtitle: viewModel.completedPhaseConfig.title
-                )
+        GeometryReader { geometry in
+            let horizontalPadding = AppTheme.contentHorizontalPadding(for: geometry.size.width)
+            let topPadding = AppTheme.contentTopPadding(for: geometry.size.width)
+            let bottomPadding = AppTheme.contentBottomPadding(for: geometry.size.width)
 
-                HStack(spacing: 14) {
-                    QuestMetricCard(
-                        label: "Average Score",
-                        value: "\(viewModel.averageScore)",
-                        detail: "\(viewModel.performanceData.count) stages recorded",
-                        accent: AppTheme.accent
+            ScrollView {
+                VStack(spacing: 24) {
+                    QuestSectionHeader(
+                        eyebrow: "Phase \(viewModel.completedPhaseConfig.id) Complete",
+                        title: viewModel.completedPhaseConfig.concept,
+                        subtitle: viewModel.completedPhaseConfig.title
                     )
-                    QuestMetricCard(
-                        label: "Status",
-                        value: "Unlocked",
-                        detail: viewModel.nextPhaseConfig == nil ? "Final phase cleared" : "Next lesson ready",
-                        accent: AppTheme.highlight
-                    )
-                }
 
-                if let badge = viewModel.badge {
-                    BadgeView(badge: badge)
-                }
-
-                if !viewModel.performanceData.isEmpty {
-                    PerformanceDashboardView(data: viewModel.performanceData, averageScore: viewModel.averageScore)
-                }
-
-                if let next = viewModel.nextPhaseConfig {
-                    NextPhaseTeaserView(config: next)
-                }
-
-                if let progress = progressRecords.first {
-                    let service = GameProgressService(modelContext: modelContext, progress: progress)
-                    Button {
-                        appViewModel.closePhaseSummary(using: service)
-                    } label: {
-                        Text("Continue Journey")
-                            .frame(maxWidth: .infinity)
+                    QuestAdaptiveMetricGrid {
+                        QuestMetricCard(
+                            label: "Average Score",
+                            value: "\(viewModel.averageScore)",
+                            detail: "\(viewModel.performanceData.count)개 스테이지 기록",
+                            accent: AppTheme.accent
+                        )
+                        QuestMetricCard(
+                            label: "Status",
+                            value: "Unlocked",
+                            detail: viewModel.nextPhaseConfig == nil ? "Final phase cleared" : "Next lesson ready",
+                            accent: AppTheme.highlight
+                        )
                     }
-                    .buttonStyle(QuestPrimaryButtonStyle())
+
+                    if let badge = viewModel.badge {
+                        BadgeView(badge: badge)
+                    }
+
+                    if !viewModel.performanceData.isEmpty {
+                        PerformanceDashboardView(data: viewModel.performanceData, averageScore: viewModel.averageScore)
+                    }
+
+                    if let next = viewModel.nextPhaseConfig {
+                        NextPhaseTeaserView(config: next)
+                    }
+
+                    if let progress = progressRecords.first {
+                        let service = GameProgressService(modelContext: modelContext, progress: progress)
+                        Button {
+                            appViewModel.closePhaseSummary(using: service)
+                        } label: {
+                            Text("Continue Journey".ko)
+                                .multilineTextAlignment(.center)
+                        }
+                        .buttonStyle(QuestPrimaryButtonStyle())
+                    }
                 }
+                .questReadableContentFrame(in: geometry.size.width)
+                .padding(.horizontal, horizontalPadding)
+                .padding(.top, topPadding)
+                .padding(.bottom, bottomPadding)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
-            .padding(.bottom, 32)
+            .scrollClipDisabled()
         }
         .foregroundStyle(AppTheme.textPrimary)
         .questScreenBackground()
@@ -95,17 +103,17 @@ struct BadgeView: View {
             }
 
             VStack(spacing: 6) {
-                Text("Badge Earned")
+                Text("Badge Earned".ko)
                     .font(.system(.caption, design: .rounded).weight(.semibold))
                     .foregroundStyle(AppTheme.textMuted)
-                Text(badge.title)
+                Text(badge.title.ko)
                     .font(.system(.title3, design: .rounded).weight(.bold))
                     .foregroundStyle(AppTheme.textPrimary)
             }
         }
         .frame(maxWidth: .infinity)
         .questCard()
-        .accessibilityLabel("Badge earned: \(badge.title)")
+        .accessibilityLabel("획득한 배지: \(badge.title.ko)")
     }
 }
 
@@ -115,13 +123,13 @@ struct PerformanceDashboardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Performance Dashboard")
+            Text("Performance Dashboard".ko)
                 .font(.system(.headline, design: .rounded).weight(.semibold))
 
             ForEach(data) { point in
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("Stage \(point.stageNumber)")
+                        Text("Stage \(point.stageNumber)".ko)
                             .font(.system(.caption, design: .rounded).weight(.semibold))
                             .foregroundStyle(AppTheme.textMuted)
                         Spacer()
@@ -176,24 +184,34 @@ struct NextPhaseTeaserView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                QuestChip(text: "Next Up · Phase \(config.id)", accent: AppTheme.accent)
-                Spacer(minLength: 0)
-                Image(systemName: "arrow.right.circle.fill")
-                    .foregroundStyle(AppTheme.accent)
+            ViewThatFits(in: .horizontal) {
+                HStack {
+                    QuestChip(text: "Next Up · Phase \(config.id)", accent: AppTheme.accent)
+                    Spacer(minLength: 0)
+                    Image(systemName: "arrow.right.circle.fill")
+                        .foregroundStyle(AppTheme.accent)
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    QuestChip(text: "Next Up · Phase \(config.id)", accent: AppTheme.accent)
+                    Image(systemName: "arrow.right.circle.fill")
+                        .foregroundStyle(AppTheme.accent)
+                }
             }
 
-            Text(config.title)
+            Text(config.title.ko)
                 .font(.system(.headline, design: .rounded).weight(.semibold))
                 .foregroundStyle(AppTheme.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
 
-            Text(config.teaserDescription)
+            Text(config.teaserDescription.ko)
                 .font(.system(.subheadline, design: .rounded))
                 .foregroundStyle(AppTheme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .questCard(fill: AppTheme.accentDeep.opacity(0.18))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Next phase unlocked: \(config.title). \(config.teaserDescription)")
+        .accessibilityLabel("다음 페이즈 해제: \(config.title.ko). \(config.teaserDescription.ko)")
     }
 }

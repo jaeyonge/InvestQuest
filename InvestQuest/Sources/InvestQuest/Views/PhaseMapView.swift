@@ -10,55 +10,62 @@ struct PhaseMapView: View {
         if let progress = progressRecords.first {
             let service = GameProgressService(modelContext: modelContext, progress: progress)
             NavigationStack {
-                ScrollView {
-                    VStack(spacing: 20) {
-                        QuestSectionHeader(
-                            eyebrow: "Progress Map",
-                            title: "InvestQuest",
-                            subtitle: "Seven phases. Each lesson unlocks after you prove the last one."
-                        )
+                GeometryReader { geometry in
+                    let horizontalPadding = AppTheme.contentHorizontalPadding(for: geometry.size.width)
+                    let topPadding = AppTheme.contentTopPadding(for: geometry.size.width)
+                    let bottomPadding = AppTheme.contentBottomPadding(for: geometry.size.width)
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            QuestSectionHeader(
+                                eyebrow: "Progress Map",
+                                title: "InvestQuest",
+                                subtitle: "Seven phases. Each lesson unlocks after you prove the last one."
+                            )
 
-                        HStack(spacing: 14) {
-                            QuestMetricCard(
-                                label: "Current Phase",
-                                value: "Phase \(service.progress.currentPhase)",
-                                detail: "Stage \(service.progress.currentStage)",
-                                accent: AppTheme.accent
-                            )
-                            QuestMetricCard(
-                                label: "Completed",
-                                value: "\(service.progress.completedPhases.count)/\(PhaseConfig.all.count)",
-                                detail: "Phases cleared so far",
-                                accent: AppTheme.highlight
-                            )
-                        }
+                            QuestAdaptiveMetricGrid {
+                                QuestMetricCard(
+                                    label: "Current Phase",
+                                    value: "Phase \(service.progress.currentPhase)",
+                                    detail: "Stage \(service.progress.currentStage)",
+                                    accent: AppTheme.accent
+                                )
+                                QuestMetricCard(
+                                    label: "Completed",
+                                    value: "\(service.progress.completedPhases.count)/\(PhaseConfig.all.count)",
+                                    detail: "Phases cleared so far",
+                                    accent: AppTheme.highlight
+                                )
+                            }
 
-                        ForEach(PhaseConfig.all) { phase in
-                            PhaseNodeView(
-                                config: phase,
-                                isUnlocked: service.isPhaseUnlocked(phase.id),
-                                isCompleted: service.isPhaseCompleted(phase.id),
-                                isCurrent: service.progress.currentPhase == phase.id,
-                                isStageUnlocked: { stage in
-                                    service.isStageUnlocked(phase: phase.id, stage: stage)
-                                },
-                                isStageCompleted: { stage in
-                                    service.completion(for: StageAddress(phase: phase.id, stage: stage))?.isPassed == true
-                                },
-                                onSelectStage: { stage in
-                                    guard service.isStageUnlocked(phase: phase.id, stage: stage) else { return }
-                                    appViewModel.openStage(StageAddress(phase: phase.id, stage: stage))
-                                }
-                            )
+                            ForEach(PhaseConfig.all) { phase in
+                                PhaseNodeView(
+                                    config: phase,
+                                    isUnlocked: service.isPhaseUnlocked(phase.id),
+                                    isCompleted: service.isPhaseCompleted(phase.id),
+                                    isCurrent: service.progress.currentPhase == phase.id,
+                                    isStageUnlocked: { stage in
+                                        service.isStageUnlocked(phase: phase.id, stage: stage)
+                                    },
+                                    isStageCompleted: { stage in
+                                        service.completion(for: StageAddress(phase: phase.id, stage: stage))?.isPassed == true
+                                    },
+                                    onSelectStage: { stage in
+                                        guard service.isStageUnlocked(phase: phase.id, stage: stage) else { return }
+                                        appViewModel.openStage(StageAddress(phase: phase.id, stage: stage))
+                                    }
+                                )
+                            }
                         }
+                        .questReadableContentFrame(in: geometry.size.width)
+                        .padding(.horizontal, horizontalPadding)
+                        .padding(.top, topPadding)
+                        .padding(.bottom, bottomPadding)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 16)
-                    .padding(.bottom, 28)
+                    .scrollClipDisabled()
                 }
-                .navigationTitle("InvestQuest")
+                .navigationTitle("InvestQuest".ko)
                 .navigationBarTitleDisplayMode(.inline)
-                .toolbarBackground(.hidden, for: .navigationBar)
+                .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
             }
             .questScreenBackground()
         } else {
@@ -114,28 +121,33 @@ struct PhaseNodeView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 6) {
-                        HStack {
-                            Text("Phase \(config.id)")
-                                .font(.system(.caption, design: .rounded).weight(.semibold))
-                                .foregroundStyle(AppTheme.textMuted)
-                            Spacer(minLength: 0)
-                            if isCurrent {
-                                QuestChip(text: "Current", accent: AppTheme.accent)
-                            } else if isCompleted {
-                                QuestChip(text: "Cleared", accent: AppTheme.success)
-                            } else if !isUnlocked {
-                                QuestChip(text: "Locked", accent: AppTheme.surfaceInteractive)
+                        ViewThatFits(in: .horizontal) {
+                            HStack {
+                                Text("Phase \(config.id)".ko)
+                                    .font(.system(.caption, design: .rounded).weight(.semibold))
+                                    .foregroundStyle(AppTheme.textMuted)
+                                Spacer(minLength: 0)
+                                statusChip
+                            }
+
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Phase \(config.id)".ko)
+                                    .font(.system(.caption, design: .rounded).weight(.semibold))
+                                    .foregroundStyle(AppTheme.textMuted)
+                                statusChip
                             }
                         }
 
-                        Text(config.title)
+                        Text(config.title.ko)
                             .font(.system(.headline, design: .rounded).weight(.semibold))
                             .foregroundStyle(isUnlocked ? AppTheme.textPrimary : AppTheme.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
 
-                        Text(isUnlocked ? config.concept : config.teaserDescription)
+                        Text((isUnlocked ? config.concept : config.teaserDescription).ko)
                             .font(.system(.subheadline, design: .rounded))
                             .foregroundStyle(AppTheme.textSecondary)
                             .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
 
                     Spacer(minLength: 0)
@@ -226,6 +238,17 @@ struct PhaseNodeView: View {
 
     private func stageAccessibilityLabel(stage: Int, unlocked: Bool, completed: Bool) -> String {
         let status = completed ? "completed" : (unlocked ? "unlocked" : "locked")
-        return "Stage \(stage), \(status)"
+        return "Stage \(stage), \(status)".ko
+    }
+
+    @ViewBuilder
+    private var statusChip: some View {
+        if isCurrent {
+            QuestChip(text: "Current", accent: AppTheme.accent)
+        } else if isCompleted {
+            QuestChip(text: "Cleared", accent: AppTheme.success)
+        } else if !isUnlocked {
+            QuestChip(text: "Locked", accent: AppTheme.surfaceInteractive)
+        }
     }
 }

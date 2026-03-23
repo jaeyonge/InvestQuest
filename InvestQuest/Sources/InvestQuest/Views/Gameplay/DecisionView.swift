@@ -13,18 +13,26 @@ struct DecisionView: View {
     @State private var stopLossThreshold: Double = 0.15
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                if let timeout = decisionSpec.timeoutSeconds, timeout > 0 {
-                    timerCard(timeout: timeout)
-                }
+        GeometryReader { geometry in
+            let horizontalPadding = AppTheme.contentHorizontalPadding(for: geometry.size.width)
+            let topPadding = AppTheme.contentTopPadding(for: geometry.size.width)
+            let bottomPadding = AppTheme.contentBottomPadding(for: geometry.size.width)
 
-                StageScenarioPanelView(scenario: scenario)
-                decisionContent
+            ScrollView {
+                VStack(spacing: 20) {
+                    if let timeout = decisionSpec.timeoutSeconds, timeout > 0 {
+                        timerCard(timeout: timeout)
+                    }
+
+                    StageScenarioPanelView(scenario: scenario)
+                    decisionContent
+                }
+                .questReadableContentFrame(in: geometry.size.width)
+                .padding(.horizontal, horizontalPadding)
+                .padding(.top, topPadding)
+                .padding(.bottom, bottomPadding)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
-            .padding(.bottom, 28)
+            .scrollClipDisabled()
         }
         .foregroundStyle(AppTheme.textPrimary)
         .accessibilityIdentifier("stage-decision")
@@ -52,24 +60,17 @@ struct DecisionView: View {
 
     private func timerCard(timeout: Double) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Decision Window")
-                        .font(.system(.headline, design: .rounded).weight(.semibold))
-                        .foregroundStyle(AppTheme.textPrimary)
-                    Text("Commit before the opportunity closes.")
-                        .font(.system(.subheadline, design: .rounded))
-                        .foregroundStyle(AppTheme.textSecondary)
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .top) {
+                    timerCopy
+                    Spacer(minLength: 12)
+                    timerPill(timeout: timeout)
                 }
-                Spacer(minLength: 12)
-                QuestStatPill(
-                    label: "Time",
-                    value: "\(Int(ceil(timeRemaining)))s",
-                    accent: timeRemaining < timeout * 0.25 ? AppTheme.highlight : AppTheme.accent
-                )
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel("\(Int(ceil(timeRemaining)))s")
-                .accessibilityIdentifier("decision-timer-label")
+
+                VStack(alignment: .leading, spacing: 10) {
+                    timerCopy
+                    timerPill(timeout: timeout)
+                }
             }
 
             ProgressView(value: max(timeRemaining, 0), total: timeout)
@@ -80,7 +81,7 @@ struct DecisionView: View {
 
     private func binaryOptionsView(options: [DecisionOption]) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Choose your move")
+            Text("Choose your move".ko)
                 .font(.system(.headline, design: .rounded).weight(.semibold))
                 .foregroundStyle(AppTheme.textPrimary)
 
@@ -89,11 +90,13 @@ struct DecisionView: View {
                     onSubmit(.binary(choice: option.id))
                 } label: {
                     HStack(alignment: .center, spacing: 14) {
-                        Text(option.label)
+                        Text(option.label.ko)
                             .font(.system(.headline, design: .rounded).weight(.semibold))
+                            .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         Image(systemName: "arrow.up.right")
                             .font(.system(size: 14, weight: .bold))
+                            .frame(width: 18, alignment: .center)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -109,26 +112,31 @@ struct DecisionView: View {
     }
 
     private func allocationView(assets: [DecisionAsset]) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Build Allocation")
-                        .font(.system(.headline, design: .rounded).weight(.semibold))
-                    Text("The portfolio auto-balances to 100% as you adjust conviction.")
-                        .font(.system(.caption, design: .rounded))
-                        .foregroundStyle(AppTheme.textSecondary)
+        let assetIDs = assets.map(\.id)
+        let displayedAllocation = AllocationMath.roundedPercentages(sliderValues, assetIDs: assetIDs)
+        let submittedAllocation = AllocationMath.roundedAllocation(sliderValues, assetIDs: assetIDs)
+
+        return VStack(alignment: .leading, spacing: 18) {
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .top) {
+                    allocationCopy
+                    Spacer(minLength: 12)
+                    QuestStatPill(label: "Total", value: "\(displayedAllocation.values.reduce(0, +))%", accent: AppTheme.highlight)
                 }
-                Spacer(minLength: 12)
-                QuestStatPill(label: "Total", value: "\(Int(allocationTotal * 100))%", accent: AppTheme.highlight)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    allocationCopy
+                    QuestStatPill(label: "Total", value: "\(displayedAllocation.values.reduce(0, +))%", accent: AppTheme.highlight)
+                }
             }
 
             ForEach(assets) { asset in
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
-                        Text(asset.label)
+                        Text(asset.label.ko)
                             .font(.system(.subheadline, design: .rounded).weight(.semibold))
                         Spacer()
-                        Text("\(Int((sliderValues[asset.id] ?? 0) * 100))%")
+                        Text("\(displayedAllocation[asset.id] ?? 0)%")
                             .font(.system(.subheadline, design: .rounded).weight(.bold))
                             .foregroundStyle(AppTheme.textPrimary)
                     }
@@ -164,7 +172,7 @@ struct DecisionView: View {
             }
 
             singleActionButton(label: "Confirm Allocation") {
-                onSubmit(.allocation(sliderValues))
+                onSubmit(.allocation(submittedAllocation))
             }
         }
         .questCard(fill: AppTheme.surface.opacity(0.78))
@@ -178,43 +186,32 @@ struct DecisionView: View {
 
     private func rankingView(assets: [DecisionAsset]) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Rank from strongest to weakest conviction.")
+            Text("Rank from strongest to weakest conviction.".ko)
                 .font(.system(.subheadline, design: .rounded))
                 .foregroundStyle(AppTheme.textSecondary)
 
             ForEach(Array((rankingOrder.isEmpty ? assets.map(\.id) : rankingOrder).enumerated()), id: \.element) { index, assetID in
-                let label = assets.first(where: { $0.id == assetID })?.label ?? assetID
+                let label = (assets.first(where: { $0.id == assetID })?.label ?? assetID).ko
+                let instruction = (index == 0 ? "Highest conviction" : "Move up or down to reorder.").ko
 
-                HStack(spacing: 14) {
-                    ZStack {
-                        Circle()
-                            .fill(AppTheme.accent.opacity(0.14))
-                            .frame(width: 34, height: 34)
-                        Text("\(index + 1)")
-                            .font(.system(.caption, design: .rounded).weight(.bold))
-                            .foregroundStyle(AppTheme.accent)
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 14) {
+                        rankingBadge(index: index)
+                        rankingCopy(label: label, instruction: instruction)
+                        Spacer(minLength: 8)
+                        rankingControls(for: assetID, index: index)
                     }
 
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(label)
-                            .font(.system(.subheadline, design: .rounded).weight(.semibold))
-                        Text(index == 0 ? "Highest conviction" : "Move up or down to reorder.")
-                            .font(.system(.caption, design: .rounded))
-                            .foregroundStyle(AppTheme.textMuted)
-                    }
-
-                    Spacer(minLength: 8)
-
-                    HStack(spacing: 8) {
-                        rankingButton(icon: "arrow.up") {
-                            moveRankingItem(assetID: assetID, direction: -1)
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack(spacing: 14) {
+                            rankingBadge(index: index)
+                            rankingCopy(label: label, instruction: instruction)
                         }
-                        .disabled(index == 0)
 
-                        rankingButton(icon: "arrow.down") {
-                            moveRankingItem(assetID: assetID, direction: 1)
+                        HStack {
+                            Spacer(minLength: 0)
+                            rankingControls(for: assetID, index: index)
                         }
-                        .disabled(index == rankingOrder.count - 1)
                     }
                 }
                 .padding(16)
@@ -235,7 +232,7 @@ struct DecisionView: View {
 
     private func valuationView(options: [DecisionOption]) -> some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("Estimate intrinsic value")
+            Text("Estimate intrinsic value".ko)
                 .font(.system(.headline, design: .rounded).weight(.semibold))
 
             QuestMetricCard(
@@ -259,7 +256,7 @@ struct DecisionView: View {
 
     private func stopLossView(options: [DecisionOption], suggestedThreshold: Double) -> some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("Set stop-loss threshold")
+            Text("Set stop-loss threshold".ko)
                 .font(.system(.headline, design: .rounded).weight(.semibold))
 
             QuestMetricCard(
@@ -300,10 +297,6 @@ struct DecisionView: View {
         rankingOrder.swapAt(index, target)
     }
 
-    private var allocationTotal: Double {
-        sliderValues.values.reduce(0, +)
-    }
-
     private func updateAllocation(for assetID: String, newValue: Double, assets: [DecisionAsset]) {
         let clamped = min(max(newValue, 0), 1)
         let otherIDs = assets.map(\.id).filter { $0 != assetID }
@@ -332,11 +325,82 @@ struct DecisionView: View {
 
     private func singleActionButton(label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(label)
-                .frame(maxWidth: .infinity)
+            Text(label.ko)
+                .multilineTextAlignment(.center)
         }
         .buttonStyle(QuestPrimaryButtonStyle())
         .accessibilityIdentifier(label.replacingOccurrences(of: " ", with: "-").lowercased())
+    }
+
+    private var timerCopy: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Decision Window".ko)
+                .font(.system(.headline, design: .rounded).weight(.semibold))
+                .foregroundStyle(AppTheme.textPrimary)
+            Text("Commit before the opportunity closes.".ko)
+                .font(.system(.subheadline, design: .rounded))
+                .foregroundStyle(AppTheme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func timerPill(timeout: Double) -> some View {
+        QuestStatPill(
+            label: "Time",
+            value: "\(Int(ceil(timeRemaining)))s",
+            accent: timeRemaining < timeout * 0.25 ? AppTheme.highlight : AppTheme.accent
+        )
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(Int(ceil(timeRemaining)))초")
+        .accessibilityIdentifier("decision-timer-label")
+    }
+
+    private var allocationCopy: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Build Allocation".ko)
+                .font(.system(.headline, design: .rounded).weight(.semibold))
+            Text("The portfolio auto-balances to 100% as you adjust conviction.".ko)
+                .font(.system(.caption, design: .rounded))
+                .foregroundStyle(AppTheme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func rankingBadge(index: Int) -> some View {
+        ZStack {
+            Circle()
+                .fill(AppTheme.accent.opacity(0.14))
+                .frame(width: 34, height: 34)
+            Text("\(index + 1)")
+                .font(.system(.caption, design: .rounded).weight(.bold))
+                .foregroundStyle(AppTheme.accent)
+        }
+    }
+
+    private func rankingCopy(label: String, instruction: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                .fixedSize(horizontal: false, vertical: true)
+            Text(instruction)
+                .font(.system(.caption, design: .rounded))
+                .foregroundStyle(AppTheme.textMuted)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func rankingControls(for assetID: String, index: Int) -> some View {
+        HStack(spacing: 8) {
+            rankingButton(icon: "arrow.up") {
+                moveRankingItem(assetID: assetID, direction: -1)
+            }
+            .disabled(index == 0)
+
+            rankingButton(icon: "arrow.down") {
+                moveRankingItem(assetID: assetID, direction: 1)
+            }
+            .disabled(index == rankingOrder.count - 1)
+        }
     }
 }
 
@@ -345,27 +409,15 @@ struct StageScenarioPanelView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .top, spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(scenario.categoryAccent.opacity(0.14))
-                        .frame(width: 48, height: 48)
-                    Image(systemName: scenario.symbolName)
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(scenario.categoryAccent)
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .top, spacing: 12) {
+                    scenarioIcon
+                    scenarioCopy
                 }
 
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(scenario.categoryLabel.uppercased())
-                        .font(.system(size: 11, weight: .semibold, design: .rounded))
-                        .tracking(1.2)
-                        .foregroundStyle(AppTheme.textMuted)
-                    Text(scenario.title)
-                        .font(.system(.headline, design: .rounded).weight(.semibold))
-                        .foregroundStyle(AppTheme.textPrimary)
-                    Text(scenario.description)
-                        .font(.system(.subheadline, design: .rounded))
-                        .foregroundStyle(AppTheme.textSecondary)
+                VStack(alignment: .leading, spacing: 12) {
+                    scenarioIcon
+                    scenarioCopy
                 }
             }
 
@@ -394,6 +446,36 @@ struct StageScenarioPanelView: View {
     }
 }
 
+private extension StageScenarioPanelView {
+    var scenarioIcon: some View {
+        ZStack {
+            Circle()
+                .fill(scenario.categoryAccent.opacity(0.14))
+                .frame(width: 48, height: 48)
+            Image(systemName: scenario.symbolName)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(scenario.categoryAccent)
+        }
+    }
+
+    var scenarioCopy: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(scenario.categoryLabel.uppercased())
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .tracking(1.2)
+                .foregroundStyle(AppTheme.textMuted)
+            Text(scenario.title.ko)
+                .font(.system(.headline, design: .rounded).weight(.semibold))
+                .foregroundStyle(AppTheme.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(scenario.description.ko)
+                .font(.system(.subheadline, design: .rounded))
+                .foregroundStyle(AppTheme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
 private struct InflationScenarioPanel: View {
     let scenario: InflationScenario
 
@@ -409,18 +491,17 @@ private struct InflationScenarioPanel: View {
             }
 
             ForEach(scenario.goods) { good in
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(good.label)
-                            .font(.system(.subheadline, design: .rounded).weight(.semibold))
-                        Text("Purchasing power check")
-                            .font(.system(.caption, design: .rounded))
-                            .foregroundStyle(AppTheme.textMuted)
+                ViewThatFits(in: .horizontal) {
+                    HStack {
+                        goodInfo(good)
+                        Spacer()
+                        goodPrice(good)
                     }
-                    Spacer()
-                    Text("₩\(Int(good.startingPrice).formatted()) -> ₩\(Int(good.endingPrice).formatted())")
-                        .font(.system(.caption, design: .rounded).weight(.semibold))
-                        .foregroundStyle(AppTheme.textSecondary)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        goodInfo(good)
+                        goodPrice(good)
+                    }
                 }
                 .padding(14)
                 .background(AppTheme.surfaceInteractive, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -433,6 +514,23 @@ private struct InflationScenarioPanel: View {
             .map { "\(($0 * 100).formatted(.number.precision(.fractionLength(0))))%" }
             .joined(separator: " -> ")
     }
+
+    private func goodInfo(_ good: InflationGood) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(good.label.ko)
+                .font(.system(.subheadline, design: .rounded).weight(.semibold))
+            Text("Purchasing power check".ko)
+                .font(.system(.caption, design: .rounded))
+                .foregroundStyle(AppTheme.textMuted)
+        }
+    }
+
+    private func goodPrice(_ good: InflationGood) -> some View {
+        Text("₩\(Int(good.startingPrice).formatted()) -> ₩\(Int(good.endingPrice).formatted())")
+            .font(.system(.caption, design: .rounded).weight(.semibold))
+            .foregroundStyle(AppTheme.textSecondary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
 }
 
 private struct ValuationScenarioPanel: View {
@@ -442,7 +540,7 @@ private struct ValuationScenarioPanel: View {
         VStack(alignment: .leading, spacing: 12) {
             ForEach(scenario.opportunities) { opportunity in
                 VStack(alignment: .leading, spacing: 10) {
-                    Text(opportunity.fundamentals.businessName)
+                    Text(opportunity.fundamentals.businessName.ko)
                         .font(.system(.subheadline, design: .rounded).weight(.semibold))
 
                     valuationRow(label: "Revenue", value: opportunity.fundamentals.displayRevenue() ?? "Hidden")
@@ -450,7 +548,7 @@ private struct ValuationScenarioPanel: View {
                     valuationRow(label: "Profit", value: opportunity.fundamentals.displayProfit() ?? "Hidden")
                     valuationRow(label: "Market Price", value: "₩\(Int(opportunity.marketPrice).formatted())")
 
-                    Text(opportunity.sentimentIndicator.rawValue)
+                    Text(opportunity.sentimentIndicator.rawValue.ko)
                         .font(.system(.caption, design: .rounded))
                         .foregroundStyle(AppTheme.textMuted)
                 }
@@ -462,11 +560,11 @@ private struct ValuationScenarioPanel: View {
 
     private func valuationRow(label: String, value: String) -> some View {
         HStack {
-            Text(label)
+            Text(label.ko)
                 .font(.system(.caption, design: .rounded))
                 .foregroundStyle(AppTheme.textMuted)
             Spacer()
-            Text(value)
+            Text(value.ko)
                 .font(.system(.caption, design: .rounded).weight(.semibold))
                 .foregroundStyle(AppTheme.textSecondary)
         }
@@ -480,7 +578,7 @@ private struct BulletNoteView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(title)
+            Text(title.ko)
                 .font(.system(.subheadline, design: .rounded).weight(.semibold))
 
             ForEach(items, id: \.self) { item in
@@ -489,7 +587,7 @@ private struct BulletNoteView: View {
                         .fill(accent)
                         .frame(width: 8, height: 8)
                         .padding(.top, 6)
-                    Text(item)
+                    Text(item.ko)
                         .font(.system(.caption, design: .rounded))
                         .foregroundStyle(AppTheme.textSecondary)
                 }
@@ -503,21 +601,21 @@ private struct BehavioralProfileReviewPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Detected from your play")
+            Text("Detected from your play".ko)
                 .font(.system(.subheadline, design: .rounded).weight(.semibold))
                 .foregroundStyle(AppTheme.textPrimary)
 
             if summaries.isEmpty {
-                Text("No earlier decisions are stored yet. Finish more stages to build a behavioral profile.")
+                Text("No earlier decisions are stored yet. Finish more stages to build a behavioral profile.".ko)
                     .font(.system(.caption, design: .rounded))
                     .foregroundStyle(AppTheme.textSecondary)
             } else {
                 ForEach(summaries) { summary in
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(summary.title)
+                        Text(summary.title.ko)
                             .font(.system(.caption, design: .rounded).weight(.semibold))
                             .foregroundStyle(AppTheme.textPrimary)
-                        Text(summary.detail)
+                        Text(summary.detail.ko)
                             .font(.system(.caption, design: .rounded))
                             .foregroundStyle(AppTheme.textSecondary)
                     }
@@ -548,13 +646,13 @@ private struct BehavioralProfileReviewPanel: View {
 
             var fragments: [String] = []
             if detectedCount > 0 {
-                fragments.append("Detected \(detectedCount) time\(detectedCount == 1 ? "" : "s")")
+                fragments.append("감지 \(detectedCount)회")
             }
             if resistedCount > 0 {
-                fragments.append("Resisted \(resistedCount) time\(resistedCount == 1 ? "" : "s")")
+                fragments.append("극복 \(resistedCount)회")
             }
             if let latest {
-                fragments.append("Recent example: Phase \(latest.phase) Stage \(latest.stage)")
+                fragments.append("최근 예시: 페이즈 \(latest.phase) 스테이지 \(latest.stage)")
             }
 
             return BehavioralBiasSummary(
@@ -622,13 +720,13 @@ private enum BehavioralBiasCategory: String, CaseIterable {
     var title: String {
         switch self {
         case .anchoring:
-            return "Anchoring"
+            return "앵커링"
         case .lossAversion:
-            return "Loss Aversion"
+            return "손실 회피"
         case .herdBehavior:
-            return "Herd Behavior"
+            return "군중 추종"
         case .recencyBias:
-            return "Recency Bias"
+            return "최신 편향"
         }
     }
 }
@@ -637,19 +735,19 @@ private extension StageScenario {
     var categoryLabel: String {
         switch self {
         case .inflation:
-            return "Inflation"
+            return "인플레이션"
         case .valuation:
-            return "Valuation"
+            return "가치평가"
         case .risk:
-            return "Risk"
+            return "위험"
         case .compounding:
-            return "Compounding"
+            return "복리"
         case .exit:
-            return "Exit"
+            return "매도"
         case .diversification:
-            return "Diversification"
+            return "분산투자"
         case .behavioral:
-            return "Behavioral"
+            return "행동 심리"
         }
     }
 

@@ -12,7 +12,7 @@ final class InvestQuestUITests: XCTestCase {
         app.buttons["intro-start"].tap()
 
         XCTAssertTrue(element(in: app, id: "stage-briefing").waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Phase 1 · Stage 1"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["페이즈 1 · 스테이지 1"].waitForExistence(timeout: 5))
     }
 
     func testCompletingStageOneUnlocksStageTwo() {
@@ -20,7 +20,7 @@ final class InvestQuestUITests: XCTestCase {
         completeIntroIfNeeded(app)
         completeStageOne(app)
 
-        XCTAssertTrue(app.staticTexts["Cash vs. Savings"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["현금 vs 예금"].waitForExistence(timeout: 5))
     }
 
     func testPhaseMapOnlyEnablesUnlockedPhases() {
@@ -36,6 +36,19 @@ final class InvestQuestUITests: XCTestCase {
         XCTAssertTrue(phase2.waitForExistence(timeout: 5))
         XCTAssertTrue(phase1.isEnabled)
         XCTAssertFalse(phase2.isEnabled)
+    }
+
+    func testStageInfoButtonPresentsCurrentStageDetails() {
+        let app = launchApp(storeName: #function)
+        completeIntroIfNeeded(app)
+
+        let stageInfoButton = app.buttons["open-stage-info"]
+        XCTAssertTrue(stageInfoButton.waitForExistence(timeout: 5))
+        stageInfoButton.tap()
+
+        let stageInfoSheet = element(in: app, id: "stage-info-sheet")
+        XCTAssertTrue(stageInfoSheet.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["사라지는 1천만 원"].waitForExistence(timeout: 5))
     }
 
     func testTimedStageCountsDownAndAutoSubmitsOnTimeout() {
@@ -61,7 +74,7 @@ final class InvestQuestUITests: XCTestCase {
         XCTAssertNotEqual(timerLabel.label, initialValue)
 
         let simulation = element(in: app, id: "stage-simulation")
-        let resultsButton = waitForButton(in: app, identifiers: ["see-results", "See Results"], timeout: 10)
+        let resultsButton = waitForButton(in: app, identifiers: ["see-results", "See Results", "결과 보기"], timeout: 10)
         XCTAssertTrue(
             simulation.exists || resultsButton.exists,
             "Timed stages should auto-submit into the simulation/result flow after timeout"
@@ -126,8 +139,8 @@ final class InvestQuestUITests: XCTestCase {
         startStageButton(in: app).tap()
 
         XCTAssertTrue(element(in: app, id: "behavioral-review-summary").waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Detected 1 time. Recent example: Phase 7 Stage 3."].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.staticTexts["Detected 1 time. Recent example: Phase 5 Stage 4."].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["감지 1회. 최근 예시: 페이즈 7 스테이지 3."].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["감지 1회. 최근 예시: 페이즈 5 스테이지 4."].waitForExistence(timeout: 3))
     }
 
     // MARK: - Helpers
@@ -167,11 +180,11 @@ final class InvestQuestUITests: XCTestCase {
         XCTAssertTrue(app.buttons["observe"].waitForExistence(timeout: 5))
         app.buttons["observe"].tap()
 
-        let seeResults = waitForButton(in: app, identifiers: ["see-results", "See Results"], timeout: 10)
+        let seeResults = waitForButton(in: app, identifiers: ["see-results", "See Results", "결과 보기"], timeout: 10)
         XCTAssertTrue(seeResults.exists)
         seeResults.tap()
 
-        let seeInsight = waitForButton(in: app, identifiers: ["see-insight", "See Insight"], timeout: 5)
+        let seeInsight = waitForButton(in: app, identifiers: ["see-insight", "See Insight", "인사이트 보기"], timeout: 5)
         XCTAssertTrue(seeInsight.exists)
         seeInsight.tap()
 
@@ -184,7 +197,7 @@ final class InvestQuestUITests: XCTestCase {
     }
 
     private func startStageButton(in app: XCUIApplication) -> XCUIElement {
-        primaryButton(in: app, identifiers: ["start-stage", "Start Stage"])
+        primaryButton(in: app, identifiers: ["start-stage", "Start Stage", "스테이지 시작"])
     }
 
     private func primaryButton(in app: XCUIApplication, identifiers: [String]) -> XCUIElement {

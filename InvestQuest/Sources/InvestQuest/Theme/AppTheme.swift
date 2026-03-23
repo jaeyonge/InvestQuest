@@ -21,6 +21,64 @@ enum AppTheme {
 
     static let success = Color.investGreen
     static let danger = Color.investRed
+
+    static func contentHorizontalPadding(for width: CGFloat) -> CGFloat {
+        switch width {
+        case ..<350:
+            22
+        case ..<390:
+            26
+        case ..<430:
+            30
+        case ..<768:
+            38
+        default:
+            min(max(width * 0.10, 48), 88)
+        }
+    }
+
+    static func readableContentWidth(for width: CGFloat) -> CGFloat {
+        max(0, min(680, width - (contentHorizontalPadding(for: width) * 2)))
+    }
+
+    static func chromeHorizontalPadding(for width: CGFloat) -> CGFloat {
+        switch width {
+        case ..<390:
+            22
+        case ..<430:
+            24
+        case ..<768:
+            30
+        default:
+            min(max(width * 0.08, 36), 64)
+        }
+    }
+
+    static func contentTopPadding(for width: CGFloat) -> CGFloat {
+        switch width {
+        case ..<390:
+            24
+        case ..<430:
+            28
+        case ..<768:
+            32
+        default:
+            36
+        }
+    }
+
+    static func contentBottomPadding(for width: CGFloat) -> CGFloat {
+        switch width {
+        case ..<390:
+            40
+        case ..<430:
+            44
+        case ..<768:
+            48
+        default:
+            56
+        }
+    }
 }
 
 struct QuestBackgroundView: View {
@@ -88,7 +146,7 @@ struct QuestCardModifier: ViewModifier {
                             )
                     )
             )
-            .shadow(color: Color.black.opacity(0.26), radius: 24, x: 0, y: 16)
+            .shadow(color: Color.black.opacity(0.26), radius: 16, x: 0, y: 10)
     }
 }
 
@@ -99,8 +157,12 @@ struct QuestPrimaryButtonStyle: ButtonStyle {
         configuration.label
             .font(.system(.headline, design: .rounded).weight(.semibold))
             .foregroundStyle(AppTheme.backgroundTop)
+            .lineLimit(3)
+            .minimumScaleFactor(0.82)
+            .fixedSize(horizontal: false, vertical: true)
             .padding(.vertical, 16)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 18)
+            .frame(maxWidth: .infinity)
             .background(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(
@@ -129,6 +191,9 @@ struct QuestSecondaryButtonStyle: ButtonStyle {
         configuration.label
             .font(.system(.headline, design: .rounded).weight(.semibold))
             .foregroundStyle(AppTheme.textPrimary)
+            .lineLimit(2)
+            .minimumScaleFactor(0.82)
+            .fixedSize(horizontal: false, vertical: true)
             .padding(.vertical, 14)
             .padding(.horizontal, 18)
             .background(
@@ -144,10 +209,46 @@ struct QuestSecondaryButtonStyle: ButtonStyle {
     }
 }
 
+struct QuestGlassButtonStyle: ButtonStyle {
+    var tint: Color = AppTheme.accent
+    var foreground: Color = AppTheme.textPrimary
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(.subheadline, design: .rounded).weight(.semibold))
+            .foregroundStyle(foreground)
+            .lineLimit(1)
+            .minimumScaleFactor(0.82)
+            .padding(.vertical, 10)
+            .padding(.horizontal, 14)
+            .background(.ultraThinMaterial, in: Capsule(style: .continuous))
+            .background(
+                Capsule(style: .continuous)
+                    .fill(Color.white.opacity(configuration.isPressed ? 0.14 : 0.08))
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [tint.opacity(0.34), Color.white.opacity(0.16)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1
+                            )
+                    )
+            )
+            .shadow(color: tint.opacity(configuration.isPressed ? 0.08 : 0.14), radius: 10, x: 0, y: 6)
+            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .animation(.easeOut(duration: 0.16), value: configuration.isPressed)
+    }
+}
+
 struct QuestSectionHeader: View {
     let eyebrow: String
     let title: String
     let subtitle: String?
+
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     init(eyebrow: String, title: String, subtitle: String? = nil) {
         self.eyebrow = eyebrow
@@ -157,19 +258,23 @@ struct QuestSectionHeader: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(eyebrow.uppercased())
+            Text(eyebrow.ko.uppercased())
                 .font(.system(size: 12, weight: .semibold, design: .rounded))
                 .tracking(1.8)
                 .foregroundStyle(AppTheme.accent)
 
-            Text(title)
-                .font(.system(size: 31, weight: .bold, design: .rounded))
+            Text(title.ko)
+                .font(.system(horizontalSizeClass == .compact ? .title : .largeTitle, design: .rounded).weight(.bold))
                 .foregroundStyle(AppTheme.textPrimary)
+                .lineLimit(3)
+                .minimumScaleFactor(0.85)
+                .fixedSize(horizontal: false, vertical: true)
 
             if let subtitle {
-                Text(subtitle)
+                Text(subtitle.ko)
                     .font(.system(.subheadline, design: .rounded))
                     .foregroundStyle(AppTheme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -183,13 +288,16 @@ struct QuestStatPill: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(label.uppercased())
+            Text(label.ko.uppercased())
                 .font(.system(size: 11, weight: .semibold, design: .rounded))
                 .tracking(1.2)
                 .foregroundStyle(AppTheme.textMuted)
-            Text(value)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(value.ko)
                 .font(.system(.headline, design: .rounded).weight(.bold))
                 .foregroundStyle(AppTheme.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
         .padding(.vertical, 10)
         .padding(.horizontal, 14)
@@ -216,22 +324,24 @@ struct QuestMetricCard: View {
                 Circle()
                     .fill(accent)
                     .frame(width: 8, height: 8)
-                Text(label.uppercased())
+                Text(label.ko.uppercased())
                     .font(.system(size: 11, weight: .semibold, design: .rounded))
                     .tracking(1.2)
                     .foregroundStyle(AppTheme.textMuted)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
-            Text(value)
+            Text(value.ko)
                 .font(.system(size: 24, weight: .bold, design: .rounded))
                 .foregroundStyle(AppTheme.textPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
 
             if let detail {
-                Text(detail)
+                Text(detail.ko)
                     .font(.system(.caption, design: .rounded))
                     .foregroundStyle(AppTheme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -257,12 +367,13 @@ struct QuestInfoBanner: View {
             }
 
             VStack(alignment: .leading, spacing: 6) {
-                Text(title)
+                Text(title.ko)
                     .font(.system(.subheadline, design: .rounded).weight(.semibold))
                     .foregroundStyle(AppTheme.textPrimary)
-                Text(message)
+                Text(message.ko)
                     .font(.system(.subheadline, design: .rounded))
                     .foregroundStyle(AppTheme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Spacer(minLength: 0)
@@ -276,9 +387,11 @@ struct QuestChip: View {
     var accent: Color = AppTheme.accent
 
     var body: some View {
-        Text(text)
+        Text(text.ko)
             .font(.system(.caption, design: .rounded).weight(.semibold))
             .foregroundStyle(AppTheme.textPrimary)
+            .lineLimit(1)
+            .minimumScaleFactor(0.82)
             .padding(.vertical, 8)
             .padding(.horizontal, 12)
             .background(
@@ -292,9 +405,30 @@ struct QuestChip: View {
     }
 }
 
+struct QuestAdaptiveMetricGrid<Content: View>: View {
+    var minimumColumnWidth: CGFloat = 150
+    var spacing: CGFloat = 14
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        LazyVGrid(
+            columns: [GridItem(.adaptive(minimum: minimumColumnWidth), spacing: spacing, alignment: .top)],
+            alignment: .leading,
+            spacing: spacing
+        ) {
+            content()
+        }
+    }
+}
+
 extension View {
     func questCard(padding: CGFloat = 18, fill: Color = AppTheme.surfaceRaised.opacity(0.92)) -> some View {
         modifier(QuestCardModifier(padding: padding, fill: fill))
+    }
+
+    func questReadableContentFrame(in width: CGFloat, alignment: Alignment = .center) -> some View {
+        frame(maxWidth: AppTheme.readableContentWidth(for: width), alignment: alignment)
+            .frame(maxWidth: .infinity, alignment: .center)
     }
 
     func questScreenBackground() -> some View {

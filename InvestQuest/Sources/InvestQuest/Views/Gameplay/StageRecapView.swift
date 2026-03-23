@@ -12,57 +12,65 @@ struct StageRecapView: View {
         let service = progressRecords.first.map { GameProgressService(modelContext: modelContext, progress: $0) }
         let recapPhase = service?.recapPhase
 
-        ScrollView {
-            VStack(spacing: 22) {
-                QuestSectionHeader(
-                    eyebrow: "Resume",
-                    title: "Welcome Back",
-                    subtitle: "Take a quick warm-up lap before diving back into the run."
-                )
+        GeometryReader { geometry in
+            let horizontalPadding = AppTheme.contentHorizontalPadding(for: geometry.size.width)
+            let topPadding = AppTheme.contentTopPadding(for: geometry.size.width)
+            let bottomPadding = AppTheme.contentBottomPadding(for: geometry.size.width)
 
-                VStack(spacing: 18) {
-                    ZStack {
-                        Circle()
-                            .fill(AppTheme.highlight.opacity(0.14))
-                            .frame(width: 92, height: 92)
-                        Image(systemName: "clock.arrow.circlepath")
-                            .font(.system(size: 40))
-                            .foregroundStyle(AppTheme.highlight)
-                    }
+            ScrollView {
+                VStack(spacing: 22) {
+                    QuestSectionHeader(
+                        eyebrow: "Resume",
+                        title: "Welcome Back",
+                        subtitle: "Take a quick warm-up lap before diving back into the run."
+                    )
 
-                    if let recapPhase {
-                        Text("You last completed Phase \(recapPhase.id): \(recapPhase.title)")
-                            .font(.system(.headline, design: .rounded).weight(.semibold))
-                            .multilineTextAlignment(.center)
-                        Text(recapPhase.concept)
-                            .font(.system(.title3, design: .rounded).weight(.bold))
+                    VStack(spacing: 18) {
+                        ZStack {
+                            Circle()
+                                .fill(AppTheme.highlight.opacity(0.14))
+                                .frame(width: 92, height: 92)
+                            Image(systemName: "clock.arrow.circlepath")
+                                .font(.system(size: 40))
+                                .foregroundStyle(AppTheme.highlight)
+                        }
+
+                        if let recapPhase {
+                            Text("You last completed Phase \(recapPhase.id): \(recapPhase.title)".ko)
+                                .font(.system(.headline, design: .rounded).weight(.semibold))
+                                .multilineTextAlignment(.center)
+                            Text(recapPhase.concept.ko)
+                                .font(.system(.title3, design: .rounded).weight(.bold))
+                                .foregroundStyle(AppTheme.textSecondary)
+                        }
+
+                        Text("Replay one stage as a warm-up, then continue from your current progression.".ko)
+                            .font(.system(.body, design: .rounded))
                             .foregroundStyle(AppTheme.textSecondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .questCard()
+
+                    QuestAdaptiveMetricGrid {
+                        QuestMetricCard(label: "Resume At", value: "Phase \(address.phase)", detail: "Stage \(address.stage)", accent: AppTheme.accent)
+                        QuestMetricCard(label: "Mode", value: "Warm-up", detail: "One quick replay before the run", accent: AppTheme.highlight)
                     }
 
-                    Text("Replay one stage as a warm-up, then continue from your current progression.")
-                        .font(.system(.body, design: .rounded))
-                        .foregroundStyle(AppTheme.textSecondary)
-                        .multilineTextAlignment(.center)
+                    Button {
+                        appViewModel.dismissRecap(into: address)
+                    } label: {
+                        Text("Continue to Stage".ko)
+                            .multilineTextAlignment(.center)
+                    }
+                    .buttonStyle(QuestPrimaryButtonStyle(tint: AppTheme.highlight))
+                    .accessibilityIdentifier("continue-from-recap")
                 }
-                .questCard()
-
-                HStack(spacing: 14) {
-                    QuestMetricCard(label: "Resume At", value: "Phase \(address.phase)", detail: "Stage \(address.stage)", accent: AppTheme.accent)
-                    QuestMetricCard(label: "Mode", value: "Warm-up", detail: "One quick replay before the run", accent: AppTheme.highlight)
-                }
-
-                Button {
-                    appViewModel.dismissRecap(into: address)
-                } label: {
-                    Text("Continue to Stage")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(QuestPrimaryButtonStyle(tint: AppTheme.highlight))
-                .accessibilityIdentifier("continue-from-recap")
+                .questReadableContentFrame(in: geometry.size.width)
+                .padding(.horizontal, horizontalPadding)
+                .padding(.top, topPadding)
+                .padding(.bottom, bottomPadding)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
-            .padding(.bottom, 28)
+            .scrollClipDisabled()
         }
         .foregroundStyle(AppTheme.textPrimary)
         .accessibilityIdentifier("stage-recap")
